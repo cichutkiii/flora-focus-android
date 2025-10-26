@@ -39,6 +39,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -52,6 +53,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.databinding.adapters)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -75,7 +77,7 @@ dependencies {
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.firebase.analytics.ktx)
-    implementation(libs.firebase.crashlytics.ktx)
+//    implementation(libs.firebase.crashlytics.ktx)
 
     // Play Services (dla Google Sign-In)
     implementation(libs.play.services.auth)
@@ -95,7 +97,14 @@ dependencies {
 
     // === GSON (dla serializacji) ===
     implementation(libs.gson)
+    // === RETROFIT & OKHTTP (dla Weather API) ===
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
 
+    // === TIMBER (logging) ===
+    implementation(libs.timber)
     // === TESTING ===
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
