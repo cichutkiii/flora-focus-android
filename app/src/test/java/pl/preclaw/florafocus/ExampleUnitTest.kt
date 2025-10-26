@@ -1,4 +1,4 @@
-package pl.preclaw.gardenfocus
+package pl.preclaw.florafocus
 
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package pl.preclaw.gardenfocus.ui.theme
+package pl.preclaw.florafocus.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

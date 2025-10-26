@@ -1,4 +1,4 @@
-package pl.preclaw.gardenfocus
+package pl.preclaw.florafocus
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("pl.preclaw.gardenfocus", appContext.packageName)
+        assertEquals("pl.preclaw.florafocus", appContext.packageName)
     }
 }
