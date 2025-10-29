@@ -3,48 +3,87 @@ package pl.preclaw.florafocus.data.local.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import pl.preclaw.florafocus.data.local.entities.DummyEntity
+import pl.preclaw.florafocus.data.local.dao.*
+import pl.preclaw.florafocus.data.local.entities.*
 
 /**
  * Main Room database for Flora Focus
- *
- * This is the skeleton - add entities and DAOs as you implement them
- *
- * Example of what will be added:
- * @Database(
- *     entities = [
- *         UserPlantEntity::class,
- *         TaskEntity::class,
- *         GardenEntity::class,
- *         GardenAreaEntity::class,
- *         BedEntity::class,
- *         PlantNoteEntity::class,
- *         // ... other entities
- *     ],
- *     version = 1,
- *     exportSchema = true
- * )
+ * 
+ * Version 1 - MVP Schema:
+ * - PlantCatalog (reference plants)
+ * - UserPlants + related tables (growth history, health, interventions, harvests, propagation)
+ * - Tasks + recurring templates
+ * - Garden mapping (gardens, areas, beds, cells, decorations)
+ * - Rotation planning
  */
 @Database(
     entities = [
-        DummyEntity::class
-        // Add your entities here as you create them
+        // Plant Catalog
+        PlantCatalogEntity::class,
+        
+        // User Plants & Related
+        UserPlantEntity::class,
+        PlantGrowthHistoryEntity::class,
+        HealthRecordEntity::class,
+        InterventionEntity::class,
+        HarvestRecordEntity::class,
+        PropagationRecordEntity::class,
+        
+        // Tasks
+        TaskEntity::class,
+        RecurringTaskTemplateEntity::class,
+        
+        // Garden Mapping
+        GardenEntity::class,
+        GardenAreaEntity::class,
+        BedEntity::class,
+        BedCellEntity::class,
+        AreaDecorationEntity::class,
+        
+        // Rotation Planning
+        RotationPlanEntity::class
     ],
     version = 1,
-    exportSchema = false // Set to true in production
+    exportSchema = true // Set to true for production - generates schema files for migrations
 )
 @TypeConverters(Converters::class)
 abstract class FloraFocusDatabase : RoomDatabase() {
 
-    // Add DAO abstract methods here as you create them
-    // Example:
-    // abstract fun userPlantDao(): UserPlantDao
-    // abstract fun taskDao(): TaskDao
-    // abstract fun gardenDao(): GardenDao
-    // abstract fun gardenAreaDao(): GardenAreaDao
-    // abstract fun bedDao(): BedDao
-    // abstract fun inventoryDao(): InventoryDao
-    // abstract fun harvestDao(): HarvestDao
-    // abstract fun rotationDao(): RotationDao
-    // abstract fun weatherDao(): WeatherDao
+    // ==================== DAOs ====================
+
+    /**
+     * DAO for plant catalog operations
+     */
+    abstract fun plantCatalogDao(): PlantCatalogDao
+
+    /**
+     * DAO for user plant operations
+     */
+    abstract fun userPlantDao(): UserPlantDao
+
+    /**
+     * DAO for task operations
+     */
+    abstract fun taskDao(): TaskDao
+
+    /**
+     * DAO for garden mapping operations
+     */
+    abstract fun gardenDao(): GardenDao
+
+    companion object {
+        const val DATABASE_NAME = "flora_focus_database"
+        
+        /**
+         * Database version history:
+         * 
+         * Version 1 (MVP):
+         * - Initial schema with all core entities
+         * - PlantCatalog with growth phases
+         * - UserPlant with health tracking
+         * - Task management with auto-generation support
+         * - Garden 2D mapping with grid system
+         * - Rotation planning
+         */
+    }
 }
