@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import pl.preclaw.florafocus.data.local.dao.*
 import pl.preclaw.florafocus.data.local.database.FloraFocusDatabase
 import javax.inject.Singleton
 
@@ -32,31 +33,73 @@ object DatabaseModule {
         return Room.databaseBuilder(
             context,
             FloraFocusDatabase::class.java,
-            "flora_focus_database"
+            FloraFocusDatabase.DATABASE_NAME
         )
-            .fallbackToDestructiveMigration() // Only for development - remove in production
+            // TODO: Remove fallbackToDestructiveMigration in production
+            // Implement proper migrations instead
+            .fallbackToDestructiveMigration()
+            
+            // TODO: Add prepopulated database callback for seed data
+            // .addCallback(seedDatabaseCallback)
+            
             .build()
     }
 
-    // DAOs will be provided here as the database is built
-    // Example:
-    /*
+    // ==================== DAOs ====================
+
+    /**
+     * Provides PlantCatalogDao for accessing plant catalog data
+     */
+    @Provides
+    @Singleton
+    fun providePlantCatalogDao(database: FloraFocusDatabase): PlantCatalogDao {
+        return database.plantCatalogDao()
+    }
+
+    /**
+     * Provides UserPlantDao for accessing user plant data
+     * Includes: plants, growth history, health records, interventions, harvests, propagation
+     */
     @Provides
     @Singleton
     fun provideUserPlantDao(database: FloraFocusDatabase): UserPlantDao {
         return database.userPlantDao()
     }
 
+    /**
+     * Provides TaskDao for accessing task data
+     * Includes: tasks, recurring templates
+     */
     @Provides
     @Singleton
     fun provideTaskDao(database: FloraFocusDatabase): TaskDao {
         return database.taskDao()
     }
 
+    /**
+     * Provides GardenDao for accessing garden mapping data
+     * Includes: gardens, areas, beds, cells, decorations, rotation plans
+     */
     @Provides
     @Singleton
     fun provideGardenDao(database: FloraFocusDatabase): GardenDao {
         return database.gardenDao()
+    }
+
+    // ==================== FUTURE DAOs ====================
+    // Add more DAO providers here as you implement additional features:
+    
+    /*
+    @Provides
+    @Singleton
+    fun provideInventoryDao(database: FloraFocusDatabase): InventoryDao {
+        return database.inventoryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideWeatherDao(database: FloraFocusDatabase): WeatherDao {
+        return database.weatherDao()
     }
     */
 }
