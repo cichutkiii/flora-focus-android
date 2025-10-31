@@ -4,21 +4,19 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import pl.preclaw.florafocus.data.repository.*
+import pl.preclaw.florafocus.domain.repository.*
 import javax.inject.Singleton
 
 /**
  * Hilt module for providing repository implementations
  *
- * Uses @Binds instead of @Provides for better performance when binding interfaces
+ * Binds repository interfaces to their implementations
  */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
 
-    // Repository bindings will be added here as they're implemented
-    // Example:
-
-    /*
     @Binds
     @Singleton
     abstract fun bindPlantRepository(
@@ -27,9 +25,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindTaskRepository(
-        taskRepositoryImpl: TaskRepositoryImpl
-    ): TaskRepository
+    abstract fun bindAuthRepository(
+        authRepositoryImpl: AuthRepositoryImpl
+    ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserPlantRepository(
+        userPlantRepositoryImpl: UserPlantRepositoryImpl
+    ): UserPlantRepository
 
     @Binds
     @Singleton
@@ -39,10 +43,13 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindAuthRepository(
-        authRepositoryImpl: AuthRepositoryImpl
-    ): AuthRepository
+    abstract fun bindTaskRepository(
+        taskRepositoryImpl: TaskRepositoryImpl
+    ): TaskRepository
 
+    // Future Phase II repositories:
+
+    /*
     @Binds
     @Singleton
     abstract fun bindWeatherRepository(
