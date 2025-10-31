@@ -31,8 +31,7 @@ data class GardenArea(
     val sunExposure: SunExposure?,
     val soilType: String?,
     val soilPH: Float?,
-    val beds: List<Bed> = emptyList(),
-    val decorations: List<AreaDecoration> = emptyList(),
+    val objects: List<AreaObject> = emptyList(), // POPRAWKA: Zgodnie ze spec
     val notes: String?,
     val createdAt: Long,
     val updatedAt: Long
@@ -42,31 +41,30 @@ data class GardenArea(
  * Bed (growing area with grid)
  */
 data class Bed(
-    val id: String,
-    val areaId: String,
+    override val id: String,
+    override val areaId: String,
     val name: String,
-    val position: Position2D,
-    val size: Size2D,
-    val rotation: Float,
+    override val position: Position2D,
+    override val size: Size2D,
+    override val rotation: Float,
     val bedType: BedType,
     val gridRows: Int,
     val gridColumns: Int,
+    val cells: Map<Pair<Int, Int>, BedCell>, // POPRAWKA: Zgodnie ze spec - mapa zamiast listy
     val soilPH: Float?,
     val sunExposure: SunExposure?,
-    val cells: List<BedCell> = emptyList(),
     val notes: String?,
     val createdAt: Long,
     val updatedAt: Long
-)
-
+) : AreaObject()
+/**
+ * Individual cell in bed grid
+ */
 /**
  * Individual cell in bed grid
  */
 data class BedCell(
-    val id: String,
-    val bedId: String,
-    val rowIndex: Int,
-    val columnIndex: Int,
+    val bedId: String, // Nadal potrzebne dla referencji
     val currentPlantId: String?,
     val soilConditions: String?,
     val sunExposure: SunExposure?,
@@ -74,6 +72,7 @@ data class BedCell(
     val notes: String?,
     val updatedAt: Long
 )
+// UWAGA: rowIndex, columnIndex są w kluczu mapy, nie w BedCell
 
 /**
  * Planting history for rotation tracking
@@ -88,17 +87,18 @@ data class PlantingHistoryEntry(
 /**
  * Area decoration (non-growing objects)
  */
-data class AreaDecoration(
-    val id: String,
-    val areaId: String,
+data class Decoration(
+    override val id: String,
+    override val areaId: String,
+    override val position: Position2D,
+    override val size: Size2D,
+    override val rotation: Float,
     val decorationType: DecorationType,
     val name: String?,
-    val position: Position2D,
-    val size: Size2D,
-    val rotation: Float,
+    val metadata: Map<String, String> = emptyMap(),
     val notes: String?,
     val createdAt: Long
-)
+) : AreaObject()
 
 /**
  * Rotation plan
@@ -182,7 +182,17 @@ enum class DecorationType {
     BENCH,
     OTHER
 }
-
+/**
+ * AreaObject - sealed class representing objects within an area
+ * According to spec: Bed (growing area with grid) OR Decoration (non-growing)
+ */
+sealed class AreaObject {
+    abstract val id: String
+    abstract val areaId: String
+    abstract val position: Position2D
+    abstract val size: Size2D
+    abstract val rotation: Float
+}
 enum class SeasonType {
     SPRING,
     SUMMER,

@@ -264,6 +264,29 @@ interface GardenDao {
     /**
      * Get cell occupancy statistics
      */
+    /**
+     * Get beds in area - synchronous for mapper
+     */
+    @Query("SELECT * FROM beds WHERE areaId = :areaId ORDER BY name ASC")
+    suspend fun getBedsInAreaSync(areaId: String): List<BedEntity>
+
+    /**
+     * Get cells in bed - synchronous for mapper
+     */
+    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId ORDER BY rowIndex, columnIndex ASC")
+    suspend fun getCellsInBedSync(bedId: String): List<BedCellEntity>
+
+    /**
+     * Get decorations in area - synchronous for mapper
+     */
+    @Query("SELECT * FROM area_decorations WHERE areaId = :areaId")
+    suspend fun getDecorationsInAreaSync(areaId: String): List<AreaDecorationEntity>
+
+    /**
+     * Insert cells - batch
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCells(cells: List<BedCellEntity>)
     @Query("""
         SELECT 
             COUNT(*) as total,

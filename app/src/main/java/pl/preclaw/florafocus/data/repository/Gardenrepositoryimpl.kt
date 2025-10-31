@@ -93,11 +93,26 @@ class GardenRepositoryImpl @Inject constructor(
 
     override fun getAreas(gardenId: String): Flow<List<GardenArea>> {
         return gardenDao.getAreasInGarden(gardenId)
-            .map { entities ->
-                entities.map { gardenMapper.toDomain(it) }
+            .map { areaEntities ->
+                areaEntities.map { areaEntity ->
+                    // Pobierz beds
+                    val beds = gardenDao.getBedsInAreaSync(areaEntity.id)
+                        .map { bedEntity ->
+                            val cells = gardenDao.getCellsInBedSync(bedEntity.id)
+                            gardenMapper.toDomain(bedEntity, cells)
+                        }
+
+                    // Pobierz decorations
+                    val decorations = gardenDao.getDecorationsInAreaSync(areaEntity.id)
+                        .map { gardenMapper.toDomain(it) }
+
+                    // Połącz w objects
+                    val objects: List<AreaObject> = beds + decorations
+
+                    gardenMapper.toDomain(areaEntity, objects)
+                }
             }
     }
-
     override suspend fun getAreaById(areaId: String): GardenArea? {
         return gardenDao.getAreaById(areaId)?.let {
             gardenMapper.toDomain(it)
@@ -167,34 +182,21 @@ class GardenRepositoryImpl @Inject constructor(
             .map { entity -> entity?.let { gardenMapper.toDomain(it) } }
     }
 
-    override suspend fun createBed(bed: Bed): Result<String> {
+    override suspend fun createBed(bed: AreaObject.Bed): Result<String> {
         return try {
-            val entity = gardenMapper.toEntity(bed)
-            gardenDao.insertBed(entity)
+            val bedEntity = gardenMapper.toEntity(bed)
+            val cellEntities = gardenMapper.toCellEntities(bed)
 
-            // Create cells for the bed grid
-            val cells = mutableListOf<pl.preclaw.florafocus.data.local.entities.BedCellEntity>()
-            for (row in 0 until bed.gridRows) {
-                for (col in 0 until bed.gridColumns) {
-                    cells.add(
-                        pl.preclaw.florafocus.data.local.entities.BedCellEntity(
-                            id = "${bed.id}_${row}_$col",
-                            bedId = bed.id,
-                            row = row,
-                            column = col,
-                            plantId = null,
-                            sunExposure = bed.sunExposure,
-                            soilPH = bed.soilPH,
-                            notes = null
-                        )
-                    )
-                }
-            }
-            gardenDao.insertCells(cells)
+            gardenDao.insertBed(bedEntity)
+            gardenDao.insertCells(cellEntities)
 
-            Timber.tag(TAG).d("Created bed with ${cells.size} cells: ${bed.name}")
+            Timber.tag(TAG).d("Created bed: ${bed.name} with ${cellEntities.size} cells")
             Result.success(bed.id)
         } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Error creating bed")
+            Result.failure(e)
+        }
+    } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error creating bed")
             Result.failure(e)
         }

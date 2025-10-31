@@ -241,6 +241,27 @@ interface GardenRepository {
     suspend fun getGardenStatistics(gardenId: String): GardenStatistics
 }
 
+suspend fun createBed(bed: AreaObject.Bed): Result<String> // POPRAWKA: AreaObject.Bed
+
+/**
+ * Update bed
+ */
+suspend fun updateBed(bed: AreaObject.Bed): Result<Unit> // POPRAWKA
+
+/**
+ * Get bed by ID
+ */
+suspend fun getBedById(bedId: String): AreaObject.Bed? // POPRAWKA
+
+/**
+ * Get bed by ID as Flow
+ */
+fun getBedByIdFlow(bedId: String): Flow<AreaObject.Bed?> // POPRAWKA
+
+/**
+ * Get all beds in an area
+ */
+fun getBeds(areaId: String): Flow<List<AreaObject.Bed>> // POPRAWKA
 /**
  * Companion planting validation result
  */
