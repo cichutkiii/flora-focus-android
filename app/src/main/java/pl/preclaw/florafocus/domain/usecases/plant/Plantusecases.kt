@@ -2,6 +2,7 @@ package pl.preclaw.florafocus.domain.usecase.plant
 
 import kotlinx.coroutines.flow.Flow
 import pl.preclaw.florafocus.domain.model.*
+import pl.preclaw.florafocus.domain.repository.PlantCatalogRepository
 import pl.preclaw.florafocus.domain.repository.PlantRepository
 import javax.inject.Inject
 
@@ -9,8 +10,8 @@ import javax.inject.Inject
  * Get all plants from catalog
  */
 class GetAllPlantsUseCase @Inject constructor(
-    private val plantRepository: PlantRepository
-) {
+    private val plantCatalogRepository: PlantCatalogRepository
+)
     operator fun invoke(): Flow<List<Plant>> {
         return plantRepository.getAllPlants()
     }
