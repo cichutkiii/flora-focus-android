@@ -19,7 +19,7 @@ import javax.inject.Singleton
  * Local database is the source of truth, Firebase is used for syncing catalog updates
  */
 @Singleton
-class PlantRepositoryImpl @Inject constructor(
+class PlantCatalogRepositoryImpl @Inject constructor(
     private val plantCatalogDao: PlantCatalogDao,
     private val firestore: FirebaseFirestore,
     private val plantMapper: PlantMapper
