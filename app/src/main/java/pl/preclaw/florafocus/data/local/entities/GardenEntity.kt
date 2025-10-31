@@ -144,7 +144,12 @@ data class BedEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
-
+{
+    // Helper function - nie przechowywane w DB
+    fun toCellsMap(cells: List<BedCellEntity>): Map<Pair<Int, Int>, BedCellEntity> {
+        return cells.associateBy { Pair(it.rowIndex, it.columnIndex) }
+    }
+}
 /**
  * Individual cell in a bed's grid
  * Tracks what's planted and history for rotation
@@ -209,6 +214,8 @@ data class CellHistoryRecord(
 
 /**
  * Decoration object within an area (path, compost, border, etc.)
+ *
+ * Domain representation: AreaObject.Decoration
  */
 @Entity(
     tableName = "area_decorations",
@@ -306,8 +313,13 @@ data class Size2D(
     val height: Float
 )
 
-// ==================== ENUMS ====================
-
+/**
+ * Decorative 2D object in garden (tree, pond, path, etc.)
+ * Not a growing area, just visual/organizational
+ *
+ * NOTE: These are objects at Garden level (outside areas)
+ * For objects inside areas, use AreaDecorationEntity
+ */
 enum class GardenObjectType {
     TREE,
     SHRUB,

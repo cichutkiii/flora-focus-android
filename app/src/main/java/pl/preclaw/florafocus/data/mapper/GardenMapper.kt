@@ -46,8 +46,7 @@ object GardenMapper {
 
     fun toDomain(
         entity: GardenAreaEntity,
-        beds: List<Bed> = emptyList(),
-        decorations: List<AreaDecoration> = emptyList()
+        objects: List<AreaObject> = emptyList() // POPRAWKA
     ): GardenArea {
         return GardenArea(
             id = entity.id,
@@ -60,8 +59,7 @@ object GardenMapper {
             sunExposure = entity.sunExposure?.toDomain(),
             soilType = entity.soilType,
             soilPH = entity.soilPH,
-            beds = beds,
-            decorations = decorations,
+            objects = objects, // POPRAWKA: Zamiast beds i decorations osobno
             notes = entity.notes,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt
@@ -160,7 +158,60 @@ object GardenMapper {
     }
 
     // ==================== DECORATION ====================
+    fun toDomain(entity: BedEntity, cells: List<BedCellEntity>): AreaObject.Bed {
+        return AreaObject.Bed(
+            id = entity.id,
+            areaId = entity.areaId,
+            name = entity.name,
+            position = entity.position.toDomain(),
+            size = entity.size.toDomain(),
+            rotation = entity.rotation,
+            bedType = entity.bedType.toDomain(),
+            gridRows = entity.gridRows,
+            gridColumns = entity.gridColumns,
+            cells = cells.associate { // POPRAWKA: Konwersja do mapy
+                Pair(it.rowIndex, it.columnIndex) to BedCell(
+                    bedId = it.bedId,
+                    currentPlantId = it.currentPlantId,
+                    soilConditions = it.soilConditions,
+                    sunExposure = it.sunExposure?.toDomain(),
+                    plantingHistory = it.plantingHistory.map { history ->
+                        PlantingHistoryEntry(
+                            plantId = history.plantId,
+                            plantFamily = history.plantFamily,
+                            plantedDate = history.plantedDate,
+                            harvestedDate = history.harvestedDate
+                        )
+                    },
+                    notes = it.notes,
+                    updatedAt = it.updatedAt
+                )
+            },
+            soilPH = entity.soilPH,
+            sunExposure = entity.sunExposure?.toDomain(),
+            notes = entity.notes,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
+        )
+    }
 
+    /**
+     * Convert AreaDecorationEntity to domain AreaObject.Decoration
+     */
+    fun toDomain(entity: AreaDecorationEntity): AreaObject.Decoration {
+        return AreaObject.Decoration(
+            id = entity.id,
+            areaId = entity.areaId,
+            position = entity.position.toDomain(),
+            size = entity.size.toDomain(),
+            rotation = entity.rotation,
+            decorationType = entity.decorationType.toDomain(),
+            name = null, // Jeśli nie ma w entity, dodaj pole
+            metadata = entity.metadata,
+            notes = null, // Dodaj jeśli potrzeba
+            createdAt = entity.createdAt
+        )
+    }
     fun toDomain(entity: AreaDecorationEntity): AreaDecoration {
         return AreaDecoration(
             id = entity.id,
@@ -190,7 +241,51 @@ object GardenMapper {
     }
 
     // ==================== ROTATION PLAN ====================
+    fun toEntity(domain: AreaObject.Bed): BedEntity {
+        return BedEntity(
+            id = domain.id,
+            areaId = domain.areaId,
+            name = domain.name,
+            position = Position2D(domain.position.x, domain.position.y),
+            size = Size2D(domain.size.width, domain.size.height),
+            rotation = domain.rotation,
+            bedType = domain.bedType.toEntity(),
+            gridRows = domain.gridRows,
+            gridColumns = domain.gridColumns,
+            soilPH = domain.soilPH,
+            sunExposure = domain.sunExposure?.toEntity(),
+            notes = domain.notes,
+            createdAt = domain.createdAt,
+            updatedAt = domain.updatedAt
+        )
+    }
 
+    fun toCellEntities(bed: AreaObject.Bed): List<BedCellEntity> {
+        return bed.cells.map { (position, cell) ->
+            BedCellEntity(
+                id = "${bed.id}_${position.first}_${position.second}", // Generate ID
+                bedId = cell.bedId,
+                rowIndex = position.first,
+                columnIndex = position.second,
+                currentPlantId = cell.currentPlantId,
+                soilConditions = cell.soilConditions,
+                sunExposure = cell.sunExposure?.toEntity(),
+                plantingHistory = cell.plantingHistory.map { entry ->
+                    CellHistoryRecord(
+                        plantId = entry.plantId,
+                        plantCatalogId = "", // Potrzebne z repository
+                        plantFamily = entry.plantFamily,
+                        plantedDate = entry.plantedDate,
+                        harvestedDate = entry.harvestedDate,
+                        season = 0, // Potrzebne obliczenie
+                        yieldKg = null
+                    )
+                },
+                notes = cell.notes,
+                updatedAt = cell.updatedAt
+            )
+        }
+    }
     fun toDomain(entity: RotationPlanEntity): RotationPlan {
         return RotationPlan(
             id = entity.id,
