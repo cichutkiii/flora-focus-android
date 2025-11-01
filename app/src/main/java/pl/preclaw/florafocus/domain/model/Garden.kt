@@ -78,9 +78,9 @@ data class BedCell(
  * Planting history for rotation tracking
  */
 data class PlantingHistoryEntry(
-    val plantId: String,
-    val plantFamily: String,
-    val plantedDate: Long,
+    val plantId: String?,
+    val plantFamily: String?,
+    val plantedDate: Long?,
     val harvestedDate: Long?
 )
 

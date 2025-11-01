@@ -4,7 +4,7 @@ import pl.preclaw.florafocus.data.local.entities.*
 import pl.preclaw.florafocus.domain.model.*
 
 /**
- * Mapper for Garden-related entities
+ * Mapper for Garden-related entities - POPRAWIONA WERSJA
  */
 object GardenMapper {
 
@@ -28,7 +28,7 @@ object GardenMapper {
         )
     }
 
-    fun toEntity(domain: Garden): GardenEntity {
+    fun toGardenEntity(domain: Garden): GardenEntity {
         return GardenEntity(
             id = domain.id,
             userId = domain.userId,
@@ -46,7 +46,7 @@ object GardenMapper {
 
     fun toDomain(
         entity: GardenAreaEntity,
-        objects: List<AreaObject> = emptyList() // POPRAWKA
+        objects: List<AreaObject> = emptyList()
     ): GardenArea {
         return GardenArea(
             id = entity.id,
@@ -59,14 +59,14 @@ object GardenMapper {
             sunExposure = entity.sunExposure?.toDomain(),
             soilType = entity.soilType,
             soilPH = entity.soilPH,
-            objects = objects, // POPRAWKA: Zamiast beds i decorations osobno
+            objects = objects,
             notes = entity.notes,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt
         )
     }
 
-    fun toEntity(domain: GardenArea): GardenAreaEntity {
+    fun toAreaEntity(domain: GardenArea): GardenAreaEntity {
         return GardenAreaEntity(
             id = domain.id,
             gardenId = domain.gardenId,
@@ -86,7 +86,7 @@ object GardenMapper {
 
     // ==================== BED ====================
 
-    fun toDomain(entity: BedEntity, cells: List<BedCell> = emptyList()): Bed {
+    fun bedToDomain(entity: BedEntity, cells: Map<Pair<Int, Int>, BedCell>): Bed {
         return Bed(
             id = entity.id,
             areaId = entity.areaId,
@@ -97,16 +97,16 @@ object GardenMapper {
             bedType = entity.bedType.toDomain(),
             gridRows = entity.gridRows,
             gridColumns = entity.gridColumns,
+            cells = cells,
             soilPH = entity.soilPH,
             sunExposure = entity.sunExposure?.toDomain(),
-            cells = cells,
             notes = entity.notes,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt
         )
     }
 
-    fun toEntity(domain: Bed): BedEntity {
+    fun toBedEntity(domain: Bed): BedEntity {
         return BedEntity(
             id = domain.id,
             areaId = domain.areaId,
@@ -129,10 +129,7 @@ object GardenMapper {
 
     fun toDomain(entity: BedCellEntity): BedCell {
         return BedCell(
-            id = entity.id,
             bedId = entity.bedId,
-            rowIndex = entity.rowIndex,
-            columnIndex = entity.columnIndex,
             currentPlantId = entity.currentPlantId,
             soilConditions = entity.soilConditions,
             sunExposure = entity.sunExposure?.toDomain(),
@@ -142,12 +139,12 @@ object GardenMapper {
         )
     }
 
-    fun toEntity(domain: BedCell): BedCellEntity {
+    fun toCellEntity(domain: BedCell, cellId: String, rowIndex: Int, columnIndex: Int): BedCellEntity {
         return BedCellEntity(
-            id = domain.id,
+            id = cellId,
             bedId = domain.bedId,
-            rowIndex = domain.rowIndex,
-            columnIndex = domain.columnIndex,
+            rowIndex = rowIndex,
+            columnIndex = columnIndex,
             currentPlantId = domain.currentPlantId,
             soilConditions = domain.soilConditions,
             sunExposure = domain.sunExposure?.toEntity(),
@@ -157,62 +154,9 @@ object GardenMapper {
         )
     }
 
-    // ==================== DECORATION ====================
-    fun toDomain(entity: BedEntity, cells: List<BedCellEntity>): AreaObject.Bed {
-        return AreaObject.Bed(
-            id = entity.id,
-            areaId = entity.areaId,
-            name = entity.name,
-            position = entity.position.toDomain(),
-            size = entity.size.toDomain(),
-            rotation = entity.rotation,
-            bedType = entity.bedType.toDomain(),
-            gridRows = entity.gridRows,
-            gridColumns = entity.gridColumns,
-            cells = cells.associate { // POPRAWKA: Konwersja do mapy
-                Pair(it.rowIndex, it.columnIndex) to BedCell(
-                    bedId = it.bedId,
-                    currentPlantId = it.currentPlantId,
-                    soilConditions = it.soilConditions,
-                    sunExposure = it.sunExposure?.toDomain(),
-                    plantingHistory = it.plantingHistory.map { history ->
-                        PlantingHistoryEntry(
-                            plantId = history.plantId,
-                            plantFamily = history.plantFamily,
-                            plantedDate = history.plantedDate,
-                            harvestedDate = history.harvestedDate
-                        )
-                    },
-                    notes = it.notes,
-                    updatedAt = it.updatedAt
-                )
-            },
-            soilPH = entity.soilPH,
-            sunExposure = entity.sunExposure?.toDomain(),
-            notes = entity.notes,
-            createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt
-        )
-    }
+    // ==================== DECORATIONS ====================
 
-    /**
-     * Convert AreaDecorationEntity to domain AreaObject.Decoration
-     */
-    fun toDomain(entity: AreaDecorationEntity): AreaObject.Decoration {
-        return AreaObject.Decoration(
-            id = entity.id,
-            areaId = entity.areaId,
-            position = entity.position.toDomain(),
-            size = entity.size.toDomain(),
-            rotation = entity.rotation,
-            decorationType = entity.decorationType.toDomain(),
-            name = null, // Jeśli nie ma w entity, dodaj pole
-            metadata = entity.metadata,
-            notes = null, // Dodaj jeśli potrzeba
-            createdAt = entity.createdAt
-        )
-    }
-    fun toDomain(entity: AreaDecorationEntity): AreaDecoration {
+    fun toAreaDecoration(entity: AreaDecorationEntity): AreaDecoration {
         return AreaDecoration(
             id = entity.id,
             areaId = entity.areaId,
@@ -226,7 +170,7 @@ object GardenMapper {
         )
     }
 
-    fun toEntity(domain: AreaDecoration): AreaDecorationEntity {
+    fun toDecorationEntity(domain: AreaDecoration): AreaDecorationEntity {
         return AreaDecorationEntity(
             id = domain.id,
             areaId = domain.areaId,
@@ -241,51 +185,7 @@ object GardenMapper {
     }
 
     // ==================== ROTATION PLAN ====================
-    fun toEntity(domain: AreaObject.Bed): BedEntity {
-        return BedEntity(
-            id = domain.id,
-            areaId = domain.areaId,
-            name = domain.name,
-            position = Position2D(domain.position.x, domain.position.y),
-            size = Size2D(domain.size.width, domain.size.height),
-            rotation = domain.rotation,
-            bedType = domain.bedType.toEntity(),
-            gridRows = domain.gridRows,
-            gridColumns = domain.gridColumns,
-            soilPH = domain.soilPH,
-            sunExposure = domain.sunExposure?.toEntity(),
-            notes = domain.notes,
-            createdAt = domain.createdAt,
-            updatedAt = domain.updatedAt
-        )
-    }
 
-    fun toCellEntities(bed: AreaObject.Bed): List<BedCellEntity> {
-        return bed.cells.map { (position, cell) ->
-            BedCellEntity(
-                id = "${bed.id}_${position.first}_${position.second}", // Generate ID
-                bedId = cell.bedId,
-                rowIndex = position.first,
-                columnIndex = position.second,
-                currentPlantId = cell.currentPlantId,
-                soilConditions = cell.soilConditions,
-                sunExposure = cell.sunExposure?.toEntity(),
-                plantingHistory = cell.plantingHistory.map { entry ->
-                    CellHistoryRecord(
-                        plantId = entry.plantId,
-                        plantCatalogId = "", // Potrzebne z repository
-                        plantFamily = entry.plantFamily,
-                        plantedDate = entry.plantedDate,
-                        harvestedDate = entry.harvestedDate,
-                        season = 0, // Potrzebne obliczenie
-                        yieldKg = null
-                    )
-                },
-                notes = cell.notes,
-                updatedAt = cell.updatedAt
-            )
-        }
-    }
     fun toDomain(entity: RotationPlanEntity): RotationPlan {
         return RotationPlan(
             id = entity.id,
@@ -300,7 +200,7 @@ object GardenMapper {
         )
     }
 
-    fun toEntity(domain: RotationPlan): RotationPlanEntity {
+    fun toRotationPlanEntity(domain: RotationPlan): RotationPlanEntity {
         return RotationPlanEntity(
             id = domain.id,
             gardenId = domain.gardenId,
