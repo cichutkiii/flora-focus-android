@@ -181,7 +181,7 @@ interface GardenDao {
         UPDATE bed_cells 
         SET currentPlantId = :plantId,
             updatedAt = :timestamp
-        WHERE bedId = :bedId AND rowIndex = :row AND columnIndex = :column
+        WHERE bedId = :bedId AND 'row' = :row AND 'column' = :column
     """)
     suspend fun assignPlantToCell(
         bedId: String,
@@ -218,13 +218,13 @@ interface GardenDao {
     /**
      * Get all cells in a bed
      */
-    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId ORDER BY rowIndex, columnIndex")
+    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId ORDER BY 'row', 'column'")
     fun getCellsInBed(bedId: String): Flow<List<BedCellEntity>>
 
     /**
      * Get specific cell
      */
-    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId AND rowIndex = :row AND columnIndex = :column")
+    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId AND 'row' = :row AND 'column' = :column")
     suspend fun getCell(bedId: String, row: Int, column: Int): BedCellEntity?
 
     /**
@@ -236,13 +236,13 @@ interface GardenDao {
     /**
      * Get occupied cells in bed
      */
-    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId AND currentPlantId IS NOT NULL ORDER BY rowIndex, columnIndex")
+    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId AND currentPlantId IS NOT NULL ORDER BY 'row', 'column'")
     fun getOccupiedCellsInBed(bedId: String): Flow<List<BedCellEntity>>
 
     /**
      * Get empty cells in bed
      */
-    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId AND currentPlantId IS NULL ORDER BY rowIndex, columnIndex")
+    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId AND currentPlantId IS NULL ORDER BY 'row', 'column'")
     fun getEmptyCellsInBed(bedId: String): Flow<List<BedCellEntity>>
 
     /**
@@ -254,9 +254,9 @@ interface GardenDao {
         WHERE bedId = :bedId 
         AND currentPlantId IS NOT NULL
         AND (
-            (rowIndex = :row AND (columnIndex = :col - 1 OR columnIndex = :col + 1))
+            ('row' = :row AND (`column` = :col - 1 OR 'column' = :col + 1))
             OR
-            (columnIndex = :col AND (rowIndex = :row - 1 OR rowIndex = :row + 1))
+            ('column' = :col AND ('row' = :row - 1 OR 'row' = :row + 1))
         )
     """)
     suspend fun getAdjacentOccupiedCells(bedId: String, row: Int, col: Int): List<BedCellEntity>
@@ -273,7 +273,7 @@ interface GardenDao {
     /**
      * Get cells in bed - synchronous for mapper
      */
-    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId ORDER BY rowIndex, columnIndex ASC")
+    @Query("SELECT * FROM bed_cells WHERE bedId = :bedId ORDER BY 'row', 'column' ASC")
     suspend fun getCellsInBedSync(bedId: String): List<BedCellEntity>
 
     /**
@@ -328,7 +328,7 @@ interface GardenDao {
     /**
      * Get decorations by type
      */
-    @Query("SELECT * FROM area_decorations WHERE areaId = :areaId AND decorationType = :type")
+    @Query("SELECT * FROM area_decorations WHERE areaId = :areaId AND DecType = :type")
     fun getDecorationsByType(areaId: String, type: DecorationType): Flow<List<AreaDecorationEntity>>
 
     // ==================== ROTATION PLAN - INSERT ====================
@@ -372,7 +372,7 @@ interface GardenDao {
     /**
      * Get plans with warnings
      */
-    @Query("SELECT * FROM rotation_plans WHERE bedId = :bedId AND warnings IS NOT NULL ORDER BY year DESC, season DESC")
+    @Query("SELECT * FROM rotation_plans WHERE bedId = :bedId AND rotationWarnings IS NOT NULL ORDER BY year DESC, season DESC")
     fun getRotationPlansWithWarnings(bedId: String): Flow<List<RotationPlanEntity>>
 }
 

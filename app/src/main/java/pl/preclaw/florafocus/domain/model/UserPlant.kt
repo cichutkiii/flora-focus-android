@@ -160,13 +160,13 @@ data class PropagationRecord(
 )
 
 // ==================== ENUMS ====================
-
 enum class HealthStatus {
-    HEALTHY,
-    NEEDS_ATTENTION,
-    SICK,
-    DYING,
-    DEAD
+    EXCELLENT,  // 9-10 points
+    HEALTHY,    // 7-8 points
+    GOOD,       // 5-6 points
+    POOR,       // 3-4 points
+    CRITICAL,   // 1-2 points
+    DEAD        // 0 points
 }
 
 enum class Symptom {
@@ -242,6 +242,7 @@ enum class PropagationStatus {
     IN_PROGRESS,
     ROOTING,
     TRANSPLANTED,
+    ESTABLISHED,
     SUCCESS,
     FAILED
 }

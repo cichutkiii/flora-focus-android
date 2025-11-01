@@ -65,7 +65,7 @@ data class GrowthPhase(
     val phaseName: GrowthPhaseName,
     val displayName: String,
     val averageDurationRange: Pair<Int, Int>, // days (min, max)
-    val description: String?,
+    val description: String,
     val careInstructions: List<String>,
     val visualIndicators: List<String>,
     val autoTasks: List<AutoTask>
