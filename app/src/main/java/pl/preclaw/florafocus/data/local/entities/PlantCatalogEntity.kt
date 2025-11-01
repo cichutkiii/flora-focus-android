@@ -43,126 +43,43 @@ data class PlantCatalogEntity(
     // Growing Periods
     val sowingPeriodStart: String?, // Format: "MM-DD" e.g., "04-01"
     val sowingPeriodEnd: String?, // Format: "MM-DD" e.g., "05-15"
-    val harvestPeriodStart: String?, // Format: "MM-DD"
-    val harvestPeriodEnd: String?, // Format: "MM-DD"
-    val daysToHarvestMin: Int?,
-    val daysToHarvestMax: Int?,
-    val averageYield: String?, // e.g., "5-8 kg per plant"
+    val harvestPeriodStart: String?, // Format: "MM-DD" e.g., "07-01"
+    val harvestPeriodEnd: String?, // Format: "MM-DD" e.g., "09-30"
     
-    // Growth Phases (JSON stored as string, converted by TypeConverter)
+    // Growth Information
+    val daysToHarvestMin: Int?, // Minimum days from planting to harvest
+    val daysToHarvestMax: Int?, // Maximum days from planting to harvest
+    val averageYield: String?, // "5-8 kg z rośliny", "20-30 sztuk"
+    
+    // Weather Dependencies
+    val minTemperature: Float?, // Minimum temperature (°C)
+    val maxTemperature: Float?, // Maximum temperature (°C)
+    val frostTolerant: Boolean = false,
+    
+    // Growth Phases - detailed phase information
     val growthPhases: List<GrowthPhaseData> = emptyList(),
+    
+    // Disease & Pest Information
+    val commonDiseases: List<String> = emptyList(), // Common disease names
+    val commonPests: List<String> = emptyList(), // Common pest names
+    val diseaseResistance: List<String> = emptyList(), // Diseases this plant resists
+    
+    // Additional Care Information
+    val wateringTips: String?,
+    val fertilizingTips: String?,
+    val pruningNotes: String?,
+    val specialCareInstructions: String?,
     
     // Media
     val imageUrls: List<String> = emptyList(),
-    val tags: List<String> = emptyList(),
+    val thumbnailUrl: String?,
+    
+    // Tags for filtering/searching
+    val tags: List<String> = emptyList(), // "winter-hardy", "drought-resistant", "beginner-friendly"
     
     // Metadata
-    val description: String?,
-    val careInstructions: String?,
+    val source: String?, // Where this data came from
+    val verified: Boolean = false, // Is this data verified by experts
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
-
-/**
- * Growth phase information for a plant
- * Embedded in PlantCatalogEntity
- */
-data class GrowthPhaseData(
-    val id: String,
-    val phaseName: GrowthPhaseName,
-    val displayName: String, // Localized name
-    val averageDurationDaysMin: Int,
-    val averageDurationDaysMax: Int,
-    val description: String?,
-    val careInstructions: List<String> = emptyList(),
-    val visualIndicators: List<String> = emptyList(), // e.g., "First leaves appear"
-    val autoTasks: List<AutoTaskData> = emptyList()
-)
-
-/**
- * Automatic task that should be created when a plant enters a phase
- */
-data class AutoTaskData(
-    val taskTitle: String,
-    val taskDescription: String,
-    val taskType: TaskType,
-    val triggerDayOffset: Int, // Days from phase start (0 = first day)
-    val priority: TaskPriority
-)
-
-// ==================== ENUMS ====================
-
-enum class PlantType {
-    VEGETABLE,
-    FLOWER,
-    SHRUB,
-    FRUIT_SHRUB,
-    TREE,
-    FRUIT_TREE,
-    HERB
-}
-
-enum class LightRequirements {
-    FULL_SUN,      // 6+ hours direct sun
-    PARTIAL_SUN,   // 3-6 hours sun
-    SHADE          // <3 hours sun
-}
-
-enum class WateringFrequency {
-    DAILY,
-    EVERY_2_DAYS,
-    EVERY_3_DAYS,
-    TWICE_WEEKLY,
-    WEEKLY,
-    EVERY_2_WEEKS,
-    MONTHLY,
-    WHEN_DRY
-}
-
-enum class GrowthDifficulty {
-    EASY,
-    MEDIUM,
-    HARD,
-    EXPERT
-}
-
-enum class GrowthPhaseName {
-    GERMINATION,        // Kiełkowanie
-    VEGETATIVE,         // Wzrost wegetatywny
-    FLOWERING,          // Kwitnienie
-    FRUITING,           // Owocowanie
-    RIPENING,           // Dojrzewanie
-    HARVEST,            // Zbiór
-    DORMANCY,           // Spoczynek zimowy
-    SPROUTING,          // Pąkowanie (trees/shrubs)
-    ROOT_DEVELOPMENT,   // Rozwój korzeni/bulw
-    LEAF_GROWTH,        // Wzrost liści
-    SENESCENCE          // Opadanie liści/koniec cyklu
-}
-
-enum class TaskType {
-    WATERING,
-    FERTILIZING,
-    SPRAYING,
-    PRUNING,
-    STAKING,
-    TRANSPLANTING,
-    WEEDING,
-    MULCHING,
-    PEST_CONTROL,
-    DISEASE_TREATMENT,
-    HARVESTING,
-    SOWING,
-    THINNING,
-    PINCHING,          // Pasynkowanie
-    SUPPORT_CHECK,
-    SOIL_CHECK,
-    CUSTOM
-}
-
-enum class TaskPriority {
-    CRITICAL,   // Must do today (frost warning, plant dying)
-    HIGH,       // Do within 1-2 days
-    MEDIUM,     // Do this week
-    LOW         // Good practice, but can wait
-}

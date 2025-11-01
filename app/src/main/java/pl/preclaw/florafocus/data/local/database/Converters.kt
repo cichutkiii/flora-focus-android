@@ -3,40 +3,8 @@ package pl.preclaw.florafocus.data.local.database
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import pl.preclaw.florafocus.data.local.entities.AutoTaskData
-import pl.preclaw.florafocus.data.local.entities.BedType
-import pl.preclaw.florafocus.data.local.entities.CellHistoryRecord
-import pl.preclaw.florafocus.data.local.entities.DecorationType
-import pl.preclaw.florafocus.data.local.entities.GardenObject2D
-import pl.preclaw.florafocus.data.local.entities.GardenObjectType
-import pl.preclaw.florafocus.data.local.entities.GrowthDifficulty
-import pl.preclaw.florafocus.data.local.entities.GrowthPhaseData
-import pl.preclaw.florafocus.data.local.entities.GrowthPhaseName
-import pl.preclaw.florafocus.data.local.entities.HarvestQuality
-import pl.preclaw.florafocus.data.local.entities.HarvestUnit
-import pl.preclaw.florafocus.data.local.entities.HarvestUsage
-import pl.preclaw.florafocus.data.local.entities.HealthStatus
-import pl.preclaw.florafocus.data.local.entities.InterventionType
-import pl.preclaw.florafocus.data.local.entities.LightRequirements
-import pl.preclaw.florafocus.data.local.entities.PlantType
-import pl.preclaw.florafocus.data.local.entities.PropagationMethod
-import pl.preclaw.florafocus.data.local.entities.PropagationStatus
-import pl.preclaw.florafocus.data.local.entities.RecurrencePattern
-import pl.preclaw.florafocus.data.local.entities.RotationWarning
-import pl.preclaw.florafocus.data.local.entities.RotationWarningType
-import pl.preclaw.florafocus.data.local.entities.Season
-import pl.preclaw.florafocus.data.local.entities.SunExposure
-import pl.preclaw.florafocus.data.local.entities.Symptom
-import pl.preclaw.florafocus.data.local.entities.TaskPriority
-import pl.preclaw.florafocus.data.local.entities.TaskType
-import pl.preclaw.florafocus.data.local.entities.WateringFrequency
+import pl.preclaw.florafocus.data.local.entities.*
 import java.util.Date
-
-/**
- * Room TypeConverters for complex data types
- *
- * Add more converters as needed for your entities
- */
 
 /**
  * Room TypeConverters for complex data types
@@ -73,6 +41,18 @@ class Converters {
         return gson.fromJson(value, listType)
     }
 
+    @TypeConverter
+    fun fromIntList(value: List<Int>?): String? {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toIntList(value: String?): List<Int>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<Int>>() {}.type
+        return gson.fromJson(value, listType)
+    }
+
     // ==================== MAPS ====================
 
     @TypeConverter
@@ -88,89 +68,6 @@ class Converters {
     }
 
     // ==================== PLANT CATALOG TYPES ====================
-
-    @TypeConverter
-    fun fromGrowthPhaseDataList(value: List<GrowthPhaseData>?): String? {
-        return gson.toJson(value)
-    }
-
-    @TypeConverter
-    fun toGrowthPhaseDataList(value: String?): List<GrowthPhaseData>? {
-        if (value == null) return null
-        val listType = object : TypeToken<List<GrowthPhaseData>>() {}.type
-        return gson.fromJson(value, listType)
-    }
-
-    @TypeConverter
-    fun fromAutoTaskDataList(value: List<AutoTaskData>?): String? {
-        return gson.toJson(value)
-    }
-
-    @TypeConverter
-    fun toAutoTaskDataList(value: String?): List<AutoTaskData>? {
-        if (value == null) return null
-        val listType = object : TypeToken<List<AutoTaskData>>() {}.type
-        return gson.fromJson(value, listType)
-    }
-
-    // ==================== SYMPTOM LIST ====================
-
-    @TypeConverter
-    fun fromSymptomList(value: List<Symptom>?): String? {
-        return value?.joinToString(",") { it.name }
-    }
-
-    @TypeConverter
-    fun toSymptomList(value: String?): List<Symptom>? {
-        if (value.isNullOrEmpty()) return emptyList()
-        return value.split(",").mapNotNull {
-            try {
-                Symptom.valueOf(it)
-            } catch (e: IllegalArgumentException) {
-                null
-            }
-        }
-    }
-
-    // ==================== GARDEN OBJECTS ====================
-
-    @TypeConverter
-    fun fromGardenObject2DList(value: List<GardenObject2D>?): String? {
-        return gson.toJson(value)
-    }
-
-    @TypeConverter
-    fun toGardenObject2DList(value: String?): List<GardenObject2D>? {
-        if (value == null) return null
-        val listType = object : TypeToken<List<GardenObject2D>>() {}.type
-        return gson.fromJson(value, listType)
-    }
-
-    @TypeConverter
-    fun fromCellHistoryRecordList(value: List<CellHistoryRecord>?): String? {
-        return gson.toJson(value)
-    }
-
-    @TypeConverter
-    fun toCellHistoryRecordList(value: String?): List<CellHistoryRecord>? {
-        if (value == null) return null
-        val listType = object : TypeToken<List<CellHistoryRecord>>() {}.type
-        return gson.fromJson(value, listType)
-    }
-
-    @TypeConverter
-    fun fromRotationWarningList(value: List<RotationWarning>?): String? {
-        return gson.toJson(value)
-    }
-
-    @TypeConverter
-    fun toRotationWarningList(value: String?): List<RotationWarning>? {
-        if (value == null) return null
-        val listType = object : TypeToken<List<RotationWarning>>() {}.type
-        return gson.fromJson(value, listType)
-    }
-
-    // ==================== ENUMS - PlantCatalog ====================
 
     @TypeConverter
     fun fromPlantType(value: PlantType?): String? = value?.name
@@ -197,10 +94,61 @@ class Converters {
     fun toGrowthDifficulty(value: String?): GrowthDifficulty? = value?.let { GrowthDifficulty.valueOf(it) }
 
     @TypeConverter
+    fun fromGrowthPhaseDataList(value: List<GrowthPhaseData>?): String? {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toGrowthPhaseDataList(value: String?): List<GrowthPhaseData>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<GrowthPhaseData>>() {}.type
+        return gson.fromJson(value, listType)
+    }
+
+    @TypeConverter
+    fun fromAutoTaskDataList(value: List<AutoTaskData>?): String? {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toAutoTaskDataList(value: String?): List<AutoTaskData>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<AutoTaskData>>() {}.type
+        return gson.fromJson(value, listType)
+    }
+
+    // ==================== HEALTH & STATUS ====================
+
+    @TypeConverter
+    fun fromHealthStatus(value: HealthStatus?): String? = value?.name
+
+    @TypeConverter
+    fun toHealthStatus(value: String?): HealthStatus? = value?.let { HealthStatus.valueOf(it) }
+
+    @TypeConverter
     fun fromGrowthPhaseName(value: GrowthPhaseName?): String? = value?.name
 
     @TypeConverter
     fun toGrowthPhaseName(value: String?): GrowthPhaseName? = value?.let { GrowthPhaseName.valueOf(it) }
+
+    @TypeConverter
+    fun fromSymptomList(value: List<Symptom>?): String? {
+        return value?.joinToString(",") { it.name }
+    }
+
+    @TypeConverter
+    fun toSymptomList(value: String?): List<Symptom>? {
+        if (value.isNullOrEmpty()) return emptyList()
+        return value.split(",").mapNotNull {
+            try {
+                Symptom.valueOf(it)
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }
+    }
+
+    // ==================== TASKS ====================
 
     @TypeConverter
     fun fromTaskType(value: TaskType?): String? = value?.name
@@ -214,13 +162,13 @@ class Converters {
     @TypeConverter
     fun toTaskPriority(value: String?): TaskPriority? = value?.let { TaskPriority.valueOf(it) }
 
-    // ==================== ENUMS - UserPlant ====================
+    @TypeConverter
+    fun fromRecurrencePattern(value: RecurrencePattern?): String? = value?.name
 
     @TypeConverter
-    fun fromHealthStatus(value: HealthStatus?): String? = value?.name
+    fun toRecurrencePattern(value: String?): RecurrencePattern? = value?.let { RecurrencePattern.valueOf(it) }
 
-    @TypeConverter
-    fun toHealthStatus(value: String?): HealthStatus? = value?.let { HealthStatus.valueOf(it) }
+    // ==================== INTERVENTIONS ====================
 
     @TypeConverter
     fun fromInterventionType(value: InterventionType?): String? = value?.name
@@ -229,16 +177,16 @@ class Converters {
     fun toInterventionType(value: String?): InterventionType? = value?.let { InterventionType.valueOf(it) }
 
     @TypeConverter
-    fun fromHarvestUnit(value: HarvestUnit?): String? = value?.name
-
-    @TypeConverter
-    fun toHarvestUnit(value: String?): HarvestUnit? = value?.let { HarvestUnit.valueOf(it) }
-
-    @TypeConverter
     fun fromHarvestQuality(value: HarvestQuality?): String? = value?.name
 
     @TypeConverter
     fun toHarvestQuality(value: String?): HarvestQuality? = value?.let { HarvestQuality.valueOf(it) }
+
+    @TypeConverter
+    fun fromHarvestUnit(value: HarvestUnit?): String? = value?.name
+
+    @TypeConverter
+    fun toHarvestUnit(value: String?): HarvestUnit? = value?.let { HarvestUnit.valueOf(it) }
 
     @TypeConverter
     fun fromHarvestUsage(value: HarvestUsage?): String? = value?.name
@@ -258,15 +206,41 @@ class Converters {
     @TypeConverter
     fun toPropagationStatus(value: String?): PropagationStatus? = value?.let { PropagationStatus.valueOf(it) }
 
-    // ==================== ENUMS - Task ====================
+    // ==================== GARDEN MAPPING ====================
 
     @TypeConverter
-    fun fromRecurrencePattern(value: RecurrencePattern?): String? = value?.name
+    fun fromPosition2D(value: Position2D?): String? {
+        return gson.toJson(value)
+    }
 
     @TypeConverter
-    fun toRecurrencePattern(value: String?): RecurrencePattern? = value?.let { RecurrencePattern.valueOf(it) }
+    fun toPosition2D(value: String?): Position2D? {
+        if (value == null) return null
+        return gson.fromJson(value, Position2D::class.java)
+    }
 
-    // ==================== ENUMS - Garden ====================
+    @TypeConverter
+    fun fromSize2D(value: Size2D?): String? {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toSize2D(value: String?): Size2D? {
+        if (value == null) return null
+        return gson.fromJson(value, Size2D::class.java)
+    }
+
+    @TypeConverter
+    fun fromGardenObject2DList(value: List<GardenObject2D>?): String? {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toGardenObject2DList(value: String?): List<GardenObject2D>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<GardenObject2D>>() {}.type
+        return gson.fromJson(value, listType)
+    }
 
     @TypeConverter
     fun fromGardenObjectType(value: GardenObjectType?): String? = value?.name
@@ -298,9 +272,55 @@ class Converters {
     @TypeConverter
     fun toSeason(value: String?): Season? = value?.let { Season.valueOf(it) }
 
+    // ==================== ROTATION PLANNING ====================
+
     @TypeConverter
     fun fromRotationWarningType(value: RotationWarningType?): String? = value?.name
 
     @TypeConverter
     fun toRotationWarningType(value: String?): RotationWarningType? = value?.let { RotationWarningType.valueOf(it) }
+
+    @TypeConverter
+    fun fromCellHistoryRecordList(value: List<CellHistoryRecord>?): String? {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toCellHistoryRecordList(value: String?): List<CellHistoryRecord>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<CellHistoryRecord>>() {}.type
+        return gson.fromJson(value, listType)
+    }
+
+    @TypeConverter
+    fun fromRotationWarningList(value: List<RotationWarning>?): String? {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toRotationWarningList(value: String?): List<RotationWarning>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<RotationWarning>>() {}.type
+        return gson.fromJson(value, listType)
+    }
+
+    // ==================== RANGES ====================
+
+    @TypeConverter
+    fun fromIntRange(value: IntRange?): String? {
+        return value?.let { "${it.first},${it.last}" }
+    }
+
+    @TypeConverter
+    fun toIntRange(value: String?): IntRange? {
+        if (value == null) return null
+        val parts = value.split(",")
+        return if (parts.size == 2) {
+            try {
+                IntRange(parts[0].toInt(), parts[1].toInt())
+            } catch (e: NumberFormatException) {
+                null
+            }
+        } else null
+    }
 }

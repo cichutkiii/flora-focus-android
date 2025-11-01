@@ -7,6 +7,7 @@ import kotlinx.coroutines.tasks.await
 import pl.preclaw.florafocus.data.local.dao.GardenDao
 import pl.preclaw.florafocus.data.mapper.GardenMapper
 import pl.preclaw.florafocus.domain.model.*
+import pl.preclaw.florafocus.domain.repository.CompanionValidationResult
 import pl.preclaw.florafocus.domain.repository.GardenRepository
 import timber.log.Timber
 import javax.inject.Inject

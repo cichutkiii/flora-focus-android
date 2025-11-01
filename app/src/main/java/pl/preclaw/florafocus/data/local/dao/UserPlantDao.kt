@@ -186,7 +186,7 @@ interface UserPlantDao {
         WHERE userId = :userId 
         AND isActive = 1
         AND (lastWateredDate IS NULL OR lastWateredDate < :thresholdDate)
-        ORDER BY lastWateredDate ASC NULLS FIRST
+        ORDER BY CASE WHEN lastWateredDate IS NULL THEN 0 ELSE 1 END, lastWateredDate ASC
     """)
     fun getPlantsDueForWatering(userId: String, thresholdDate: Long): Flow<List<UserPlantEntity>>
 
@@ -195,16 +195,16 @@ interface UserPlantDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGrowthHistory(history: PlantGrowthHistoryEntity)
 
-    @Query("SELECT * FROM plant_growth_history WHERE plantId = :plantId ORDER BY startDate DESC")
+    @Query("SELECT * FROM plant_growth_history WHERE plantId = :plantId ORDER BY phaseStartDate DESC")
     fun getGrowthHistory(plantId: String): Flow<List<PlantGrowthHistoryEntity>>
 
-    @Query("SELECT * FROM plant_growth_history WHERE plantId = :plantId AND endDate IS NULL LIMIT 1")
+    @Query("SELECT * FROM plant_growth_history WHERE plantId = :plantId AND phaseEndDate IS NULL LIMIT 1")
     suspend fun getCurrentPhaseHistory(plantId: String): PlantGrowthHistoryEntity?
 
     /**
      * End current phase
      */
-    @Query("UPDATE plant_growth_history SET endDate = :endDate WHERE id = :historyId")
+    @Query("UPDATE plant_growth_history SET phaseEndDate = :endDate WHERE id = :historyId")
     suspend fun endPhase(historyId: String, endDate: Long)
 
     // ==================== HEALTH RECORDS ====================
@@ -215,10 +215,10 @@ interface UserPlantDao {
     @Update
     suspend fun updateHealthRecord(record: HealthRecordEntity)
 
-    @Query("SELECT * FROM health_records WHERE plantId = :plantId ORDER BY recordDate DESC")
+    @Query("SELECT * FROM health_records WHERE plantId = :plantId ORDER BY checkDate DESC")
     fun getHealthRecords(plantId: String): Flow<List<HealthRecordEntity>>
 
-    @Query("SELECT * FROM health_records WHERE plantId = :plantId AND resolved = 0 ORDER BY recordDate DESC")
+    @Query("SELECT * FROM health_records WHERE plantId = :plantId AND resolved = 0 ORDER BY checkDate DESC")
     fun getUnresolvedHealthRecords(plantId: String): Flow<List<HealthRecordEntity>>
 
     @Query("UPDATE health_records SET resolved = 1, resolvedDate = :date WHERE id = :recordId")
@@ -249,7 +249,7 @@ interface UserPlantDao {
     @Query("SELECT * FROM harvest_records WHERE plantId = :plantId ORDER BY harvestDate DESC")
     fun getHarvestRecords(plantId: String): Flow<List<HarvestRecordEntity>>
 
-    @Query("SELECT SUM(quantity) FROM harvest_records WHERE plantId = :plantId AND unit = :unit")
+    @Query("SELECT SUM(amount) FROM harvest_records WHERE plantId = :plantId AND unit = :unit")
     suspend fun getTotalHarvest(plantId: String, unit: HarvestUnit): Float?
 
     @Query("""
@@ -304,6 +304,7 @@ interface UserPlantDao {
 /**
  * Result class for propagation statistics query
  */
+
 data class PropagationStatsResult(
     val method: PropagationMethod,
     val totalAttempts: Int,

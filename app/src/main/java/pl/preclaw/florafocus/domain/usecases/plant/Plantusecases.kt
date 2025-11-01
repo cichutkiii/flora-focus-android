@@ -10,9 +10,9 @@ import javax.inject.Inject
  * Get all plants from catalog
  */
 class GetAllPlantsUseCase @Inject constructor(
-    private val plantCatalogRepository: PlantCatalogRepository
+    private val plantRepository: PlantRepository
 )
-    operator fun invoke(): Flow<List<Plant>> {
+    suspend operator fun invoke(): Flow<List<Plant>> {
         return plantRepository.getAllPlants()
     }
 }

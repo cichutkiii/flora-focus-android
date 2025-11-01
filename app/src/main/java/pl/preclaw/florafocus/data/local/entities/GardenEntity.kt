@@ -32,6 +32,12 @@ data class GardenEntity(
     // Decorative objects outside areas (trees, ponds, paths)
     val decorativeObjects: List<GardenObject2D> = emptyList(),
     
+    // Garden-wide settings
+    val defaultSoilType: String?,
+    val defaultSunExposure: SunExposure?,
+    val climateZone: String?, // USDA hardiness zone
+    val location: String?, // City, region
+    
     val notes: String?,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
@@ -88,17 +94,23 @@ data class GardenAreaEntity(
     val sunExposure: SunExposure? = null,
     val soilType: String? = null,
     val soilPH: Float? = null,
+    val drainage: String? = null, // "good", "poor", "excellent"
+    val microclimate: String? = null, // User notes about this area
     
-    val notes: String?,
+    // Area settings
+    val isGreenhouse: Boolean = false,
+    val hasIrrigation: Boolean = false,
+    val hasCompost: Boolean = false,
+    
+    val notes: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
 
 /**
- * Bed (Growing area with grid) inside an Area
+ * Bed - Individual growing bed within an area
  * 
- * This is where plants actually grow
- * Contains a grid system for precise plant placement
+ * This is where actual plants are grown in a grid system
  */
 @Entity(
     tableName = "beds",
@@ -120,7 +132,7 @@ data class BedEntity(
     val areaId: String,
     val name: String,
     
-    // Position within area canvas
+    // Position within area
     @Embedded(prefix = "pos_")
     val position: Position2D,
     
@@ -129,30 +141,38 @@ data class BedEntity(
     
     val rotation: Float = 0f,
     
-    // Type and structure
+    // Bed properties
     val bedType: BedType,
+    val heightCm: Float? = null, // For raised beds
+    val materialType: String? = null, // "wood", "stone", "metal"
     
-    // Grid configuration
+    // Grid system
     val gridRows: Int,
     val gridColumns: Int,
+    val cellSizeWidthCm: Float, // Each cell width in centimeters
+    val cellSizeLengthCm: Float, // Each cell length in centimeters
     
-    // Environmental conditions (can override area defaults)
+    // Soil properties
+    val soilType: String? = null,
     val soilPH: Float? = null,
-    val sunExposure: SunExposure? = null,
+    val lastSoilTest: Long? = null,
+    val soilAmendments: List<String> = emptyList(), // "compost", "lime", "fertilizer"
     
-    val notes: String?,
+    // Infrastructure
+    val hasIrrigation: Boolean = false,
+    val irrigationType: String? = null, // "drip", "sprinkler", "manual"
+    val hasMulch: Boolean = false,
+    val mulchType: String? = null,
+    
+    val notes: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
-{
-    // Helper function - nie przechowywane w DB
-    fun toCellsMap(cells: List<BedCellEntity>): Map<Pair<Int, Int>, BedCellEntity> {
-        return cells.associateBy { Pair(it.rowIndex, it.columnIndex) }
-    }
-}
+
 /**
- * Individual cell in a bed's grid
- * Tracks what's planted and history for rotation
+ * Individual cell within a bed grid
+ * 
+ * This is the smallest unit where plants are tracked
  */
 @Entity(
     tableName = "bed_cells",
@@ -173,7 +193,7 @@ data class BedEntity(
     indices = [
         Index("bedId"),
         Index("currentPlantId"),
-        Index(value = ["bedId", "rowIndex", "columnIndex"], unique = true)
+        Index(value = ["bedId", "row", "column"], unique = true) // Unique position per bed
     ]
 )
 @TypeConverters(Converters::class)
@@ -182,40 +202,32 @@ data class BedCellEntity(
     val id: String,
     
     val bedId: String,
-    val rowIndex: Int,
-    val columnIndex: Int,
+    val row: Int, // 0-based row index
+    val column: Int, // 0-based column index
     
-    // Current plant in this cell
-    val currentPlantId: String? = null,
+    // Current occupation
+    val currentPlantId: String? = null, // UserPlant currently in this cell
+    val plantedDate: Long? = null,
+    val expectedHarvestDate: Long? = null,
     
-    // Local conditions (can override bed defaults)
-    val soilConditions: String? = null,
-    val sunExposure: SunExposure? = null,
+    // Cell-specific conditions
+    val sunExposure: SunExposure? = null, // Override area/bed defaults
+    val soilCondition: String? = null, // Cell-specific soil notes
+    val drainage: String? = null,
     
-    // Planting history for rotation tracking
+    // History for rotation planning
     val plantingHistory: List<CellHistoryRecord> = emptyList(),
     
-    val notes: String?,
+    // Status
+    val isBlocked: Boolean = false, // Temporarily unusable
+    val blockReason: String? = null, // "damaged", "under repair", "soil rest"
+    
+    val notes: String? = null,
     val updatedAt: Long = System.currentTimeMillis()
 )
 
 /**
- * History record for crop rotation in a cell
- */
-data class CellHistoryRecord(
-    val plantId: String,
-    val plantCatalogId: String,
-    val plantFamily: String, // e.g., "Solanaceae" - crucial for rotation
-    val plantedDate: Long,
-    val harvestedDate: Long?,
-    val season: Int, // Year
-    val yieldKg: Float? = null
-)
-
-/**
- * Decoration object within an area (path, compost, border, etc.)
- *
- * Domain representation: AreaObject.Decoration
+ * Decorative elements within areas (non-growing objects)
  */
 @Entity(
     tableName = "area_decorations",
@@ -235,7 +247,8 @@ data class AreaDecorationEntity(
     val id: String,
     
     val areaId: String,
-    val decorationType: DecorationType,
+    val name: String,
+    val DecType: DecorationType,
     
     @Embedded(prefix = "pos_")
     val position: Position2D,
@@ -244,14 +257,28 @@ data class AreaDecorationEntity(
     val size: Size2D,
     
     val rotation: Float = 0f,
-    val metadata: Map<String, String> = emptyMap(),
     
-    val createdAt: Long = System.currentTimeMillis()
+    // Decoration properties
+    val material: String? = null,
+    val color: String? = null,
+    val style: String? = null,
+    
+    // Maintenance
+    val requiresMaintenance: Boolean = false,
+    val lastMaintenanceDate: Long? = null,
+    val nextMaintenanceDate: Long? = null,
+    
+    val notes: String? = null,
+    val imageUrls: List<String> = emptyList(),
+    
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 /**
- * Rotation plan for a bed
- * Plans what to plant in future seasons
+ * Rotation planning for beds/cells
+ * 
+ * Tracks what should be planted where and when for optimal rotation
  */
 @Entity(
     tableName = "rotation_plans",
@@ -263,7 +290,11 @@ data class AreaDecorationEntity(
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("bedId"), Index("year"), Index("season")]
+    indices = [
+        Index("bedId"),
+        Index("year"),
+        Index("season")
+    ]
 )
 @TypeConverters(Converters::class)
 data class RotationPlanEntity(
@@ -274,104 +305,27 @@ data class RotationPlanEntity(
     val year: Int,
     val season: Season,
     
-    // Planned plants: "row,col" -> plantCatalogId
-    val plannedPlants: Map<String, String> = emptyMap(),
+    // Planned rotation
+    val plannedPlantFamily: String? = null, // "Solanaceae", "Brassicaceae"
+    val plannedPlantType: PlantType? = null,
+    val suggestedPlants: List<String> = emptyList(), // Plant catalog IDs
     
-    val notes: String?,
-    val warnings: List<RotationWarning> = emptyList(),
+    // Rotation validation
+    val rotationWarnings: List<RotationWarning> = emptyList(),
+    val isRecommended: Boolean = true,
     
+    // Soil preparation plan
+    val soilPreparation: List<String> = emptyList(), // "add compost", "lime application"
+    val preparationStartDate: Long? = null,
+    val preparationCompleted: Boolean = false,
+    
+    // Success tracking
+    val wasImplemented: Boolean = false,
+    val actualPlantFamily: String? = null,
+    val implementationNotes: String? = null,
+    val yieldResults: String? = null, // Success assessment after harvest
+    
+    val notes: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
-
-/**
- * Warning about rotation issues
- */
-data class RotationWarning(
-    val cellPosition: String, // "row,col"
-    val warningType: RotationWarningType,
-    val message: String,
-    val lastPlantFamily: String?,
-    val recommendedAlternatives: List<String> = emptyList() // Plant IDs
-)
-
-// ==================== VALUE CLASSES ====================
-
-/**
- * 2D Position in meters from top-left corner
- */
-data class Position2D(
-    val x: Float,
-    val y: Float
-)
-
-/**
- * Size in meters
- */
-data class Size2D(
-    val width: Float,
-    val height: Float
-)
-
-/**
- * Decorative 2D object in garden (tree, pond, path, etc.)
- * Not a growing area, just visual/organizational
- *
- * NOTE: These are objects at Garden level (outside areas)
- * For objects inside areas, use AreaDecorationEntity
- */
-enum class GardenObjectType {
-    TREE,
-    SHRUB,
-    POND,
-    PATH,
-    FENCE,
-    SHED,
-    COMPOST_BIN,
-    STATUE,
-    BENCH,
-    FOUNTAIN,
-    OTHER
-}
-
-enum class BedType {
-    RAISED_BED,     // Podniesiona grządka
-    IN_GROUND,      // W ziemi
-    CONTAINER,      // Doniczka/skrzynia
-    GREENHOUSE,     // Szklarnia
-    VERTICAL,       // Ogród wertykalny
-    ROW            // Rząd (traditional farming)
-}
-
-enum class SunExposure {
-    FULL_SUN,       // 6+ hours direct sun
-    PARTIAL_SUN,    // 3-6 hours sun
-    PARTIAL_SHADE,  // 3-6 hours, mostly shade
-    FULL_SHADE      // <3 hours sun
-}
-
-enum class DecorationType {
-    PATH,
-    WATER_FEATURE,
-    STONE,
-    BORDER,
-    COMPOST_BIN,
-    MULCH_AREA,
-    PATIO,
-    OTHER
-}
-
-enum class Season {
-    SPRING,
-    SUMMER,
-    AUTUMN,
-    WINTER
-}
-
-enum class RotationWarningType {
-    SAME_FAMILY,        // Same plant family as last season
-    TOO_FREQUENT,       // Planted too often in this spot
-    SOIL_DEPLETION,     // Heavy feeders in a row
-    DISEASE_RISK,       // Disease buildup risk
-    INCOMPATIBLE_SUCCESSION // Bad succession after specific plant
-}

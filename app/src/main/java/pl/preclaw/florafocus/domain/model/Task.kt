@@ -8,8 +8,8 @@ data class Task(
     val userId: String,
     val title: String,
     val description: String?,
-    val taskType: TaskType,
-    val priority: TaskPriority,
+    val taskType: pl.preclaw.florafocus.data.local.entities.TaskType,
+    val priority: pl.preclaw.florafocus.data.local.entities.TaskPriority,
     
     // Scheduling
     val dueDate: Long,

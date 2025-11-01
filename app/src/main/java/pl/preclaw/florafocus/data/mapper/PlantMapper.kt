@@ -43,8 +43,8 @@ object PlantMapper {
             growthPhases = entity.growthPhases.map { it.toDomain() },
             imageUrls = entity.imageUrls,
             tags = entity.tags,
-            description = entity.description,
-            careInstructions = entity.careInstructions,
+            description = entity.pruningNotes,
+            careInstructions = entity.specialCareInstructions,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt
         )
@@ -75,14 +75,56 @@ object PlantMapper {
             daysToHarvestMin = domain.daysToHarvestRange?.first,
             daysToHarvestMax = domain.daysToHarvestRange?.second,
             averageYield = domain.averageYield,
+
+            // ===== BRAKUJĄCE POLA - DODAJ: =====
+            minTemperature = null, // lub domain.minTemperature jeśli masz
+            maxTemperature = null, // lub domain.maxTemperature jeśli masz
+            frostTolerant = false, // lub domain.frostTolerant jeśli masz
+
             growthPhases = domain.growthPhases.map { it.toEntity() },
+
+            // Disease & pest info
+            commonDiseases = emptyList(), // lub domain.commonDiseases jeśli masz
+            commonPests = emptyList(), // lub domain.commonPests jeśli masz
+            diseaseResistance = emptyList(), // lub domain.diseaseResistance jeśli masz
+
+            // Care tips - mapowanie z domain.careInstructions
+            wateringTips = extractWateringTips(domain.careInstructions),
+            fertilizingTips = extractFertilizingTips(domain.careInstructions),
+            pruningNotes = extractPruningNotes(domain.careInstructions),
+            specialCareInstructions = domain.description, // lub cały careInstructions
+
+            // Media
             imageUrls = domain.imageUrls,
+            thumbnailUrl = domain.imageUrls.firstOrNull(), // Pierwszy obraz jako thumbnail
+
             tags = domain.tags,
-            description = domain.description,
-            careInstructions = domain.careInstructions,
+
+            // Metadata
+            source = "user_input", // lub domain.source jeśli masz
+            verified = false, // lub domain.verified jeśli masz
             createdAt = domain.createdAt,
             updatedAt = domain.updatedAt
         )
+    }
+
+    // Pomocnicze funkcje do parsowania careInstructions:
+    private fun extractWateringTips(careInstructions: String?): String? {
+        return careInstructions?.lines()
+            ?.find { it.contains("podlew", ignoreCase = true) || it.contains("water", ignoreCase = true) }
+            ?.substringAfter(":")?.trim()
+    }
+
+    private fun extractFertilizingTips(careInstructions: String?): String? {
+        return careInstructions?.lines()
+            ?.find { it.contains("nawóz", ignoreCase = true) || it.contains("fertil", ignoreCase = true) }
+            ?.substringAfter(":")?.trim()
+    }
+
+    private fun extractPruningNotes(careInstructions: String?): String? {
+        return careInstructions?.lines()
+            ?.find { it.contains("przycina", ignoreCase = true) || it.contains("prun", ignoreCase = true) }
+            ?.substringAfter(":")?.trim()
     }
 
     // ==================== GROWTH PHASE ====================
@@ -93,8 +135,8 @@ object PlantMapper {
             phaseName = this.phaseName.toDomain(),
             displayName = this.displayName,
             averageDurationRange = Pair(
-                this.averageDurationDaysMin,
-                this.averageDurationDaysMax
+                this.averageDurationDays.first,
+                this.averageDurationDays.last
             ),
             description = this.description,
             careInstructions = this.careInstructions,
@@ -108,8 +150,10 @@ object PlantMapper {
             id = this.id,
             phaseName = this.phaseName.toEntity(),
             displayName = this.displayName,
-            averageDurationDaysMin = this.averageDurationRange.first,
-            averageDurationDaysMax = this.averageDurationRange.second,
+            averageDurationDays = IntRange(               // ← Tworzysz IntRange
+                this.averageDurationRange.first,          // ← start zakresu
+                this.averageDurationRange.second          // ← koniec zakresu
+            ),
             description = this.description,
             careInstructions = this.careInstructions,
             visualIndicators = this.visualIndicators,
@@ -124,7 +168,7 @@ object PlantMapper {
             taskTitle = this.taskTitle,
             taskDescription = this.taskDescription,
             taskType = this.taskType.toDomain(),
-            triggerDayOffset = this.triggerDayOffset,
+            triggerDayOffset = this.triggerDay,
             priority = this.priority.toDomain()
         )
     }
@@ -134,7 +178,7 @@ object PlantMapper {
             taskTitle = this.taskTitle,
             taskDescription = this.taskDescription,
             taskType = this.taskType.toEntity(),
-            triggerDayOffset = this.triggerDayOffset,
+            triggerDay = this.triggerDayOffset,
             priority = this.priority.toEntity()
         )
     }

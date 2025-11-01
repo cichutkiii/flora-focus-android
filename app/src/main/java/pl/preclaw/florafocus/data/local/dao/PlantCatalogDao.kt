@@ -33,7 +33,10 @@ interface PlantCatalogDao {
     @Query("DELETE FROM plant_catalog WHERE id = :plantId")
     suspend fun deletePlantById(plantId: String)
 
-    // ==================== QUERIES ====================
+    @Query("DELETE FROM plant_catalog")
+    suspend fun deleteAllPlants()
+
+    // ==================== BASIC QUERIES ====================
 
     /**
      * Get all plants from catalog
@@ -51,15 +54,64 @@ interface PlantCatalogDao {
     fun getPlantByIdFlow(plantId: String): Flow<PlantCatalogEntity?>
 
     /**
+     * Get plant count for testing
+     */
+    @Query("SELECT COUNT(*) FROM plant_catalog")
+    suspend fun getPlantCount(): Int
+
+    /**
+     * Get multiple plants by IDs
+     */
+    @Query("SELECT * FROM plant_catalog WHERE id IN (:plantIds)")
+    suspend fun getPlantsByIds(plantIds: List<String>): List<PlantCatalogEntity>
+
+    @Query("SELECT * FROM plant_catalog WHERE id IN (:plantIds)")
+    fun getPlantsByIdsFlow(plantIds: List<String>): Flow<List<PlantCatalogEntity>>
+
+    // ==================== SEARCH QUERIES ====================
+
+    /**
      * Search plants by name (common or latin)
      */
     @Query("""
         SELECT * FROM plant_catalog 
         WHERE commonName LIKE '%' || :query || '%' 
         OR latinName LIKE '%' || :query || '%'
-        ORDER BY commonName ASC
+        OR family LIKE '%' || :query || '%'
+        ORDER BY 
+        CASE 
+            WHEN commonName LIKE :query || '%' THEN 1
+            WHEN latinName LIKE :query || '%' THEN 2
+            WHEN commonName LIKE '%' || :query || '%' THEN 3
+            ELSE 4
+        END,
+        commonName ASC
     """)
     fun searchPlants(query: String): Flow<List<PlantCatalogEntity>>
+
+    /**
+     * Advanced search with multiple criteria
+     */
+    @Query("""
+        SELECT * FROM plant_catalog 
+        WHERE (:nameQuery IS NULL OR commonName LIKE '%' || :nameQuery || '%' OR latinName LIKE '%' || :nameQuery || '%')
+        AND (:plantType IS NULL OR plantType = :plantType)
+        AND (:difficulty IS NULL OR growthDifficulty = :difficulty)
+        AND (:lightReq IS NULL OR lightRequirements = :lightReq)
+        AND (:edibleOnly = 0 OR edible = 1)
+        AND (:family IS NULL OR family = :family)
+        ORDER BY commonName ASC
+    """)
+    fun searchPlantsAdvanced(
+        nameQuery: String?,
+        plantType: PlantType?,
+        difficulty: GrowthDifficulty?,
+        lightReq: LightRequirements?,
+        edibleOnly: Boolean = false,
+        family: String?
+    ): Flow<List<PlantCatalogEntity>>
+
+    // ==================== FILTER QUERIES ====================
 
     /**
      * Filter by plant type
@@ -92,80 +144,108 @@ interface PlantCatalogDao {
     fun getPlantsByFamily(family: String): Flow<List<PlantCatalogEntity>>
 
     /**
-     * Get companion plants for a given plant
+     * Get all unique families
      */
-    @Query("""
-        SELECT * FROM plant_catalog 
-        WHERE id IN (:companionIds)
-        ORDER BY commonName ASC
-    """)
-    suspend fun getCompanionPlants(companionIds: List<String>): List<PlantCatalogEntity>
+    @Query("SELECT DISTINCT family FROM plant_catalog WHERE family IS NOT NULL ORDER BY family ASC")
+    fun getAllFamilies(): Flow<List<String>>
 
     /**
-     * Get incompatible plants for a given plant
+     * Get plants by hardiness zone
      */
-    @Query("""
-        SELECT * FROM plant_catalog 
-        WHERE id IN (:incompatibleIds)
-        ORDER BY commonName ASC
-    """)
-    suspend fun getIncompatiblePlants(incompatibleIds: List<String>): List<PlantCatalogEntity>
+    @Query("SELECT * FROM plant_catalog WHERE hardiness LIKE '%' || :zone || '%' ORDER BY commonName ASC")
+    fun getPlantsByHardinessZone(zone: String): Flow<List<PlantCatalogEntity>>
+
+    // ==================== COMPANION PLANTING ====================
+
+    @Query("SELECT companionPlantIds FROM plant_catalog WHERE id = :plantId")
+    fun getCompanionPlantIds(plantId: String): Flow<List<String>>
+
+    @Query("SELECT incompatiblePlantIds FROM plant_catalog WHERE id = :plantId")
+    fun getIncompatiblePlantIds(plantId: String): Flow<List<String>>
+
+    // ==================== SEASONAL QUERIES ====================
 
     /**
-     * Get plants currently in sowing period
-     * (Checks if current date is between sowingPeriodStart and sowingPeriodEnd)
-     * Note: This is a simplified check, actual implementation would need date comparison
+     * Get plants that can be sown in current period
      */
     @Query("""
         SELECT * FROM plant_catalog 
         WHERE sowingPeriodStart IS NOT NULL 
         AND sowingPeriodEnd IS NOT NULL
+        AND (
+            (sowingPeriodStart <= :currentDate AND sowingPeriodEnd >= :currentDate)
+            OR (sowingPeriodStart > sowingPeriodEnd AND (sowingPeriodStart <= :currentDate OR sowingPeriodEnd >= :currentDate))
+        )
         ORDER BY commonName ASC
     """)
-    fun getPlantsInSowingPeriod(): Flow<List<PlantCatalogEntity>>
+    fun getPlantsForSowingPeriod(currentDate: String): Flow<List<PlantCatalogEntity>>
 
     /**
-     * Advanced filter with multiple criteria
+     * Get plants ready for harvest in current period
      */
     @Query("""
         SELECT * FROM plant_catalog 
-        WHERE (:type IS NULL OR plantType = :type)
-        AND (:difficulty IS NULL OR growthDifficulty = :difficulty)
-        AND (:light IS NULL OR lightRequirements = :light)
-        AND (:edibleOnly = 0 OR edible = 1)
+        WHERE harvestPeriodStart IS NOT NULL 
+        AND harvestPeriodEnd IS NOT NULL
+        AND (
+            (harvestPeriodStart <= :currentDate AND harvestPeriodEnd >= :currentDate)
+            OR (harvestPeriodStart > harvestPeriodEnd AND (harvestPeriodStart <= :currentDate OR harvestPeriodEnd >= :currentDate))
+        )
         ORDER BY commonName ASC
     """)
-    fun getFilteredPlants(
-        type: PlantType?,
-        difficulty: GrowthDifficulty?,
-        light: LightRequirements?,
-        edibleOnly: Boolean
-    ): Flow<List<PlantCatalogEntity>>
+    fun getPlantsForHarvestPeriod(currentDate: String): Flow<List<PlantCatalogEntity>>
+
+    // ==================== BEGINNER FRIENDLY ====================
 
     /**
-     * Get count of plants in catalog
+     * Get beginner-friendly plants (easy difficulty)
      */
-    @Query("SELECT COUNT(*) FROM plant_catalog")
-    suspend fun getPlantCount(): Int
+    @Query("""
+        SELECT * FROM plant_catalog 
+        WHERE growthDifficulty = 'EASY'
+        ORDER BY commonName ASC
+    """)
+    fun getBeginnerFriendlyPlants(): Flow<List<PlantCatalogEntity>>
+
+    // ==================== RECENT AND POPULAR ====================
 
     /**
-     * Check if plant exists
+     * Get recently added plants
      */
-    @Query("SELECT EXISTS(SELECT 1 FROM plant_catalog WHERE id = :plantId)")
-    suspend fun plantExists(plantId: String): Boolean
+    @Query("""
+        SELECT * FROM plant_catalog 
+        ORDER BY createdAt DESC 
+        LIMIT :limit
+    """)
+    fun getRecentlyAddedPlants(limit: Int = 10): Flow<List<PlantCatalogEntity>>
 
     /**
-     * Get all plant families (for rotation planning)
+     * Get recently updated plants
      */
-    @Query("SELECT DISTINCT family FROM plant_catalog WHERE family IS NOT NULL ORDER BY family ASC")
-    suspend fun getAllPlantFamilies(): List<String>
+    @Query("""
+        SELECT * FROM plant_catalog 
+        ORDER BY updatedAt DESC 
+        LIMIT :limit
+    """)
+    fun getRecentlyUpdatedPlants(limit: Int = 10): Flow<List<PlantCatalogEntity>>
+
+    // ==================== STATISTICS ====================
 
     /**
-     * Get plants by multiple IDs
+     * Get count by plant type
      */
-    @Query("SELECT * FROM plant_catalog WHERE id IN (:plantIds)")
-    suspend fun getPlantsByIds(plantIds: List<String>): List<PlantCatalogEntity>
+    @Query("SELECT plantType, COUNT(*) as count FROM plant_catalog GROUP BY plantType")
+    fun getPlantCountByType(): Flow<Map<PlantType, Int>>
 
-    @Query("SELECT * FROM plant_catalog WHERE id IN (:plantIds)")
-    fun getPlantsByIdsFlow(plantIds: List<String>): Flow<List<PlantCatalogEntity>>
+    /**
+     * Get count by difficulty
+     */
+    @Query("SELECT growthDifficulty, COUNT(*) as count FROM plant_catalog GROUP BY growthDifficulty")
+    fun getPlantCountByDifficulty(): Flow<Map<GrowthDifficulty, Int>>
+
+    /**
+     * Get count by family
+     */
+    @Query("SELECT family, COUNT(*) as count FROM plant_catalog WHERE family IS NOT NULL GROUP BY family ORDER BY count DESC")
+    fun getPlantCountByFamily(): Flow<Map<String, Int>>
 }
