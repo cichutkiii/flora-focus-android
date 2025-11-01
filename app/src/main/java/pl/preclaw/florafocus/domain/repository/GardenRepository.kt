@@ -5,7 +5,7 @@ import pl.preclaw.florafocus.domain.model.*
 
 /**
  * Repository interface for Garden operations
- * 
+ *
  * Manages garden structure, areas, beds, cells, and rotation planning
  */
 interface GardenRepository {
@@ -241,27 +241,8 @@ interface GardenRepository {
     suspend fun getGardenStatistics(gardenId: String): GardenStatistics
 }
 
-suspend fun createBed(bed: AreaObject.Bed): Result<String> // POPRAWKA: AreaObject.Bed
+// ==================== DATA CLASSES ====================
 
-/**
- * Update bed
- */
-suspend fun updateBed(bed: AreaObject.Bed): Result<Unit> // POPRAWKA
-
-/**
- * Get bed by ID
- */
-suspend fun getBedById(bedId: String): AreaObject.Bed? // POPRAWKA
-
-/**
- * Get bed by ID as Flow
- */
-fun getBedByIdFlow(bedId: String): Flow<AreaObject.Bed?> // POPRAWKA
-
-/**
- * Get all beds in an area
- */
-fun getBeds(areaId: String): Flow<List<AreaObject.Bed>> // POPRAWKA
 /**
  * Companion planting validation result
  */
@@ -307,3 +288,29 @@ data class GardenStatistics(
     val plantsByFamily: Map<String, Int>,
     val utilizationRate: Float // percentage
 )
+
+/**
+ * Area decoration - objects that don't grow plants
+ */
+data class AreaDecoration(
+    val id: String,
+    val areaId: String,
+    val name: String,
+    val decorationType: DecorationType,
+    val position: Position2D,
+    val size: Size2D,
+    val rotation: Float = 0f,
+    val notes: String? = null,
+    val createdAt: Long
+)
+
+enum class DecorationType {
+    PATH,
+    WATER_FEATURE,
+    STONE,
+    BORDER,
+    COMPOST_BIN,
+    SHED,
+    GREENHOUSE,
+    OTHER
+}

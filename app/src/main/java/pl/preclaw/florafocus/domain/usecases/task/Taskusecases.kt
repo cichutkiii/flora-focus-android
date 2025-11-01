@@ -1,8 +1,10 @@
 package pl.preclaw.florafocus.domain.usecase.task
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import pl.preclaw.florafocus.domain.model.*
 import pl.preclaw.florafocus.domain.repository.TaskRepository
+import pl.preclaw.florafocus.domain.repository.TaskStats
 import javax.inject.Inject
 
 // ==================== BASIC CRUD ====================
@@ -104,8 +106,7 @@ class GetTasksByPlantUseCase @Inject constructor(
     private val taskRepository: TaskRepository
 ) {
     operator fun invoke(plantId: String): Flow<List<Task>> {
-        return taskRepository.getTasksByPlant(plantId)
-    }
+        return taskRepository.getTasksForPlant(plantId)    }
 }
 
 /**
@@ -301,6 +302,7 @@ class GetPrioritizedTasksUseCase @Inject constructor(
             .map { tasks ->
                 tasks.sortedWith(
                     compareBy<Task> { task ->
+                        // Zwróć Int do porównania (nie Unit!)
                         when (task.priority) {
                             TaskPriority.URGENT -> 0
                             TaskPriority.HIGH -> 1

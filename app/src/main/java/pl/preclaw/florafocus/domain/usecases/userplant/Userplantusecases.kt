@@ -131,7 +131,7 @@ class UpdatePlantPhaseUseCase @Inject constructor(
 class GetPlantGrowthHistoryUseCase @Inject constructor(
     private val userPlantRepository: UserPlantRepository
 ) {
-    operator fun invoke(plantId: String): Flow<List<PlantGrowthHistory>> {
+    operator fun invoke(plantId: String): Flow<List<GrowthHistory>> {
         return userPlantRepository.getPlantGrowthHistory(plantId)
     }
 }

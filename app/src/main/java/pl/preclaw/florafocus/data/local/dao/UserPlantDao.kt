@@ -135,7 +135,7 @@ interface UserPlantDao {
      * Get plants by health status
      */
     @Query("SELECT * FROM user_plants WHERE userId = :userId AND healthStatus = :status AND isActive = 1 ORDER BY customName ASC")
-    fun getPlantsByHealthStatus(userId: String, status: HealthStatus): Flow<List<UserPlantEntity>>
+    fun getPlantsByHealthStatus(userId: String, status: pl.preclaw.florafocus.domain.model.HealthStatus): Flow<List<UserPlantEntity>>
 
     /**
      * Get plants needing attention
@@ -170,7 +170,7 @@ interface UserPlantDao {
      * Get plants in specific growth phase
      */
     @Query("SELECT * FROM user_plants WHERE userId = :userId AND currentPhaseName = :phase AND isActive = 1 ORDER BY customName ASC")
-    fun getPlantsByPhase(userId: String, phase: GrowthPhaseName): Flow<List<UserPlantEntity>>
+    fun getPlantsByPhase(userId: String, phase: pl.preclaw.florafocus.domain.model.GrowthPhaseName): Flow<List<UserPlantEntity>>
 
     /**
      * Get count of user plants

@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import pl.preclaw.florafocus.data.local.database.Converters
+import pl.preclaw.florafocus.domain.model.GrowthPhaseName
 
 /**
  * Growth history tracking for user plants
@@ -31,11 +32,11 @@ import pl.preclaw.florafocus.data.local.database.Converters
 data class PlantGrowthHistoryEntity(
     @PrimaryKey
     val id: String,
-    
+
     val plantId: String,
     val phaseId: String, // Reference to GrowthPhaseData.id
     val phaseName: GrowthPhaseName,
-    
+
     val phaseStartDate: Long,
     val phaseEndDate: Long? = null, // Null if still in this phase
     val actualDurationDays: Int? = null,
@@ -57,7 +58,7 @@ data class PlantGrowthHistoryEntity(
     // Auto-transition or manual
     val autoTransitioned: Boolean = false,
     val transitionTrigger: String? = null, // "time-based", "milestone-based", "manual"
-    
+
     val notes: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
