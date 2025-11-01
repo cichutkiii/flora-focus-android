@@ -1,6 +1,9 @@
 package pl.preclaw.florafocus.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import pl.preclaw.florafocus.data.repository.CompanionValidationResult
+import pl.preclaw.florafocus.data.repository.GardenStatistics
+import pl.preclaw.florafocus.data.repository.RotationValidationResult
 import pl.preclaw.florafocus.domain.model.*
 
 /**

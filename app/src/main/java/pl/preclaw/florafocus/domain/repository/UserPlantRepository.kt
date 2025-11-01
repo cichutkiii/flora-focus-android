@@ -99,8 +99,7 @@ interface UserPlantRepository {
     /**
      * Get plant growth history
      */
-    fun getPlantGrowthHistory(plantId: String): Flow<List<PlantGrowthHistory>>
-
+    fun getPlantGrowthHistory(plantId: String): Flow<List<GrowthHistory>>
     /**
      * Add growth history record
      */
