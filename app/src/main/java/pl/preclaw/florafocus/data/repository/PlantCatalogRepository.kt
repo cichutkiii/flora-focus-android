@@ -15,7 +15,7 @@ interface PlantCatalogRepository {
 
     fun getAllPlants(): Flow<List<Plant>>
 
-    suspend fun getPlantById(plantId: String): Plant?
+    suspend fun getPlantById(plantId: String?): Plant?
 
     fun getPlantByIdFlow(plantId: String): Flow<Plant?>
 

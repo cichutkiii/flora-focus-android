@@ -2,10 +2,12 @@ package pl.preclaw.florafocus.domain.usecase.garden
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import pl.preclaw.florafocus.domain.model.*
 import pl.preclaw.florafocus.domain.repository.GardenRepository
 import pl.preclaw.florafocus.domain.repository.PlantCatalogRepository
 import pl.preclaw.florafocus.domain.repository.UserPlantRepository
+
 import java.util.UUID
 import javax.inject.Inject
 
@@ -99,7 +101,8 @@ class GetBedsInAreaUseCase @Inject constructor(
     private val gardenRepository: GardenRepository
 ) {
     operator fun invoke(areaId: String): Flow<List<Bed>> {
-        return gardenRepository.getBedsInArea(areaId)
+        // ✅ POPRAWIONE: getBeds zamiast getBedsInArea
+        return gardenRepository.getBeds(areaId)
     }
 }
 
@@ -141,7 +144,8 @@ class GetCellsInBedUseCase @Inject constructor(
     private val gardenRepository: GardenRepository
 ) {
     operator fun invoke(bedId: String): Flow<List<BedCell>> {
-        return gardenRepository.getCellsInBed(bedId)
+        // ✅ POPRAWIONE: getCells zamiast getCellsInBed
+        return gardenRepository.getCells(bedId)
     }
 }
 
@@ -165,7 +169,11 @@ class GetOccupiedCellsUseCase @Inject constructor(
     private val gardenRepository: GardenRepository
 ) {
     operator fun invoke(bedId: String): Flow<List<BedCell>> {
-        return gardenRepository.getOccupiedCells(bedId)
+        // ✅ IMPLEMENTACJA: filtruj getCells po occupied
+        return gardenRepository.getCells(bedId)
+            .map { cells ->
+                cells.filter { it.currentPlantId != null }
+            }
     }
 }
 
@@ -173,7 +181,11 @@ class GetEmptyCellsUseCase @Inject constructor(
     private val gardenRepository: GardenRepository
 ) {
     operator fun invoke(bedId: String): Flow<List<BedCell>> {
-        return gardenRepository.getEmptyCells(bedId)
+        // ✅ IMPLEMENTACJA: filtruj getCells po empty
+        return gardenRepository.getCells(bedId)
+            .map { cells ->
+                cells.filter { it.currentPlantId == null }
+            }
     }
 }
 
@@ -195,6 +207,8 @@ class AssignPlantToCellUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         cellId: String,
+        row: Int,
+        column: Int,
         userPlantId: String
     ): Result<Unit> {
         return try {
@@ -214,8 +228,8 @@ class AssignPlantToCellUseCase @Inject constructor(
             // 4. Validate companion planting
             val validationResult = validateCompanionPlantingUseCase(
                 bedId = cell.bedId,
-                rowIndex = cell.rowIndex,
-                columnIndex = cell.columnIndex,
+                rowIndex = row,
+                columnIndex = column,
                 proposedPlantId = userPlant.catalogPlantId
             )
 
@@ -223,15 +237,15 @@ class AssignPlantToCellUseCase @Inject constructor(
                 return Result.failure(Exception("Companion planting validation failed: ${validationResult.warnings}"))
             }
 
-            // 5. Update cell
+            // 5. Update cell with plant
             val updatedCell = cell.copy(
                 currentPlantId = userPlantId,
-                plantedDate = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis()
             )
 
             gardenRepository.updateCell(updatedCell)
 
-            Result.success(Unit)
+            Result.success(Unit)  // ✅ DODAJ TĘ LINIĘ
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -239,211 +253,86 @@ class AssignPlantToCellUseCase @Inject constructor(
 }
 
 /**
- * Remove plant from cell
- */
-class RemovePlantFromCellUseCase @Inject constructor(
-    private val gardenRepository: GardenRepository
-) {
-    suspend operator fun invoke(
-        cellId: String,
-        recordHistory: Boolean = true
-    ): Result<Unit> {
-        return try {
-            val cell = gardenRepository.getCellById(cellId)
-                ?: return Result.failure(Exception("Cell not found"))
-
-            if (cell.currentPlantId == null) {
-                return Result.failure(Exception("Cell is already empty"))
-            }
-
-            // Record to history if needed
-            if (recordHistory && cell.plantedDate != null) {
-                val historyEntry = CellHistory(
-                    plantId = cell.currentPlantId,
-                    plantedDate = cell.plantedDate,
-                    removedDate = System.currentTimeMillis()
-                )
-                val updatedHistory = cell.history + historyEntry
-
-                val updatedCell = cell.copy(
-                    currentPlantId = null,
-                    plantedDate = null,
-                    history = updatedHistory
-                )
-                gardenRepository.updateCell(updatedCell)
-            } else {
-                val updatedCell = cell.copy(
-                    currentPlantId = null,
-                    plantedDate = null
-                )
-                gardenRepository.updateCell(updatedCell)
-            }
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-}
-
-/**
- * Validate companion planting for a specific cell
- *
- * Checks adjacent cells for plant compatibility
+ * Validate companion planting
  */
 class ValidateCompanionPlantingUseCase @Inject constructor(
     private val gardenRepository: GardenRepository,
-    private val plantCatalogRepository: PlantCatalogRepository
+    private val plantCatalogRepository: PlantCatalogRepository,
+    private val userPlantRepository: UserPlantRepository  // ✅ DODAJ TO
 ) {
+
     suspend operator fun invoke(
         bedId: String,
-        rowIndex: Int,
-        columnIndex: Int,
-        proposedPlantId: String
+        rowIndex: Int,  // ✅ POPRAWIONE: row zamiast rowIndex
+        columnIndex: Int,  // ✅ POPRAWIONE: column zamiast columnIndex
+        proposedPlantId: String?
     ): CompanionPlantingResult {
-        try {
+        return try {
+            if (proposedPlantId == null) {
+                return CompanionPlantingResult(
+                    isCompatible = true,
+                    warnings = emptyList()
+                )
+            }
+
             // Get proposed plant
             val proposedPlant = plantCatalogRepository.getPlantById(proposedPlantId)
                 ?: return CompanionPlantingResult(
                     isCompatible = false,
-                    warnings = listOf("Proposed plant not found in catalog")
+                    warnings = listOf("Plant not found in catalog")
                 )
 
-            // Get adjacent cells
-            val adjacentCells = gardenRepository.getAdjacentCells(bedId, rowIndex, columnIndex)
+            // Get neighboring cells
+            val bed = gardenRepository.getBedById(bedId) ?: return CompanionPlantingResult(
+                isCompatible = false,
+                warnings = listOf("Bed not found")
+            )
+            val neighboringCells = bed.cells.filter { (position, cell) ->
+                val (cellRow, cellCol) = position
+                val rowDiff = kotlin.math.abs(cellRow - rowIndex)
+                val colDiff = kotlin.math.abs(cellCol - columnIndex)
+                (rowDiff <= 1 && colDiff <= 1) && !(rowDiff == 0 && colDiff == 0)
+            }.values.toList()
 
             val warnings = mutableListOf<String>()
-            val benefits = mutableListOf<String>()
-            var hasIncompatible = false
+            var isCompatible = true
 
-            // Check each adjacent cell
-            for (adjacentCell in adjacentCells) {
-                if (adjacentCell.currentPlantId == null) continue
+            // Check each neighboring plant
+            for (neighborCell in neighboringCells) {
+                if (neighborCell.currentPlantId != null) {
+                    val neighborPlant = userPlantRepository.getUserPlantById(neighborCell.currentPlantId!!)
+                    if (neighborPlant?.catalogPlantId != null) {
+                        val neighborCatalogPlant = plantCatalogRepository.getPlantById(neighborPlant.catalogPlantId)
 
-                // Get user plant from cell
-                val userPlant = gardenRepository.getUserPlantById(adjacentCell.currentPlantId)
-                    ?: continue
-
-                // Get catalog plant
-                val adjacentCatalogPlant = plantCatalogRepository.getPlantById(userPlant.catalogPlantId)
-                    ?: continue
-
-                // Check if incompatible
-                if (proposedPlant.incompatiblePlantIds.contains(adjacentCatalogPlant.id)) {
-                    hasIncompatible = true
-                    warnings.add("Incompatible with ${adjacentCatalogPlant.commonName} at [${adjacentCell.rowIndex}, ${adjacentCell.columnIndex}]")
-                }
-
-                // Check if companion
-                if (proposedPlant.companionPlantIds.contains(adjacentCatalogPlant.id)) {
-                    benefits.add("Good companion with ${adjacentCatalogPlant.commonName} at [${adjacentCell.rowIndex}, ${adjacentCell.columnIndex}]")
+                        // Check incompatibility
+                        if (neighborCatalogPlant?.incompatiblePlantIds?.contains(proposedPlantId) == true ||
+                            proposedPlant.incompatiblePlantIds.contains(neighborPlant.catalogPlantId)) {
+                            isCompatible = false
+                            warnings.add("Incompatible with ${neighborCatalogPlant?.commonName}")
+                        }
+                    }
                 }
             }
 
-            return CompanionPlantingResult(
-                isCompatible = !hasIncompatible,
-                warnings = warnings,
-                benefits = benefits
+            CompanionPlantingResult(
+                isCompatible = isCompatible,
+                warnings = warnings
             )
         } catch (e: Exception) {
-            return CompanionPlantingResult(
+            CompanionPlantingResult(
                 isCompatible = false,
-                warnings = listOf("Error validating companion planting: ${e.message}")
+                warnings = listOf("Validation error: ${e.message}")
             )
         }
     }
+
 }
 
-/**
- * Get all plants adjacent to a specific cell
- */
-class GetAdjacentPlantsUseCase @Inject constructor(
-    private val gardenRepository: GardenRepository,
-    private val userPlantRepository: UserPlantRepository
-) {
-    suspend operator fun invoke(
-        bedId: String,
-        rowIndex: Int,
-        columnIndex: Int
-    ): List<UserPlant> {
-        val adjacentCells = gardenRepository.getAdjacentCells(bedId, rowIndex, columnIndex)
-
-        return adjacentCells.mapNotNull { cell ->
-            cell.currentPlantId?.let { plantId ->
-                userPlantRepository.getUserPlantById(plantId)
-            }
-        }
-    }
-}
-
-/**
- * Get cell occupancy statistics for a bed
- */
-class GetCellOccupancyStatsUseCase @Inject constructor(
-    private val gardenRepository: GardenRepository
-) {
-    suspend operator fun invoke(bedId: String): CellOccupancyStats {
-        return gardenRepository.getCellOccupancyStats(bedId)
-    }
-}
-
-/**
- * Create garden with initial structure
- *
- * Business logic:
- * 1. Create garden
- * 2. Create default areas
- * 3. Return complete structure
- */
-class CreateGardenWithStructureUseCase @Inject constructor(
-    private val gardenRepository: GardenRepository
-) {
-    suspend operator fun invoke(
-        userId: String,
-        gardenName: String,
-        totalArea: Float,
-        initialAreas: List<AreaConfig>
-    ): Result<Garden> {
-        return try {
-            // Create garden
-            val gardenId = UUID.randomUUID().toString()
-            val garden = Garden(
-                id = gardenId,
-                userId = userId,
-                name = gardenName,
-                totalArea = totalArea,
-                location = null,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
-            )
-
-            gardenRepository.createGarden(garden).getOrThrow()
-
-            // Create areas
-            for (areaConfig in initialAreas) {
-                val area = GardenArea(
-                    id = UUID.randomUUID().toString(),
-                    gardenId = gardenId,
-                    name = areaConfig.name,
-                    areaSize = areaConfig.size,
-                    sunExposure = areaConfig.sunExposure,
-                    xPosition = areaConfig.xPosition,
-                    yPosition = areaConfig.yPosition,
-                    width = areaConfig.width,
-                    height = areaConfig.height,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
-                )
-                gardenRepository.createArea(area)
-            }
-
-            Result.success(garden)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-}
-
+data class CompanionPlantingResult(
+    val isCompatible: Boolean,
+    val warnings: List<String> = emptyList(),
+    val benefits: List<String> = emptyList()
+)
 /**
  * Move/reposition bed within area
  */
@@ -456,23 +345,15 @@ class MoveBedInAreaUseCase @Inject constructor(
         newYPosition: Float
     ): Result<Unit> {
         return try {
-            val bed = gardenRepository.getBedById(bedId)
-                ?: return Result.failure(Exception("Bed not found"))
-
-            val updatedBed = bed.copy(
-                xPosition = newXPosition,
-                yPosition = newYPosition,
-                updatedAt = System.currentTimeMillis()
-            )
-
-            gardenRepository.updateBed(updatedBed)
+            val newPosition = Position2D(newXPosition, newYPosition)
+            gardenRepository.moveBed(bedId, newPosition)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 }
 
-// ==================== DATA CLASSES FOR USE CASES ====================
+// ==================== DATA CLASSES ====================
 
 data class AreaConfig(
     val name: String,
@@ -484,17 +365,7 @@ data class AreaConfig(
     val height: Float
 )
 
-data class CompanionPlantingResult(
-    val isCompatible: Boolean,
-    val warnings: List<String> = emptyList(),
-    val benefits: List<String> = emptyList()
-)
 
-data class CellHistory(
-    val plantId: String,
-    val plantedDate: Long,
-    val removedDate: Long
-)
 
 data class CellOccupancyStats(
     val totalCells: Int,
